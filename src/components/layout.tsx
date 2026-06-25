@@ -44,8 +44,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-cream text-ink">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 lg:px-8">
-        <header className={`fd-panel-dark relative mb-6 overflow-hidden ${isTodayPage ? 'px-5 py-4 sm:px-6 sm:py-4' : 'px-5 py-4 sm:px-6 sm:py-4'}`}>
+      <div className="fd-shell-root mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 lg:px-8">
+        <header className={`fd-shell-header fd-panel-dark relative mb-6 overflow-hidden ${isTodayPage ? 'px-5 py-4 sm:px-6 sm:py-4' : 'px-5 py-4 sm:px-6 sm:py-4'}`}>
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/80 to-transparent" />
           <div className="absolute -right-16 top-0 h-32 w-32 rounded-full bg-gold/12 blur-3xl" />
           <div className={isTodayPage ? '' : 'space-y-2'}>
@@ -68,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-[232px_minmax(0,1fr)]">
-          <aside className="hidden lg:block">
+          <aside className="fd-shell-aside hidden lg:block">
             <nav className="fd-card sticky top-6 p-3">
               <div className="mb-4 px-3 pt-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Navigation</p>
@@ -83,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/96 px-2 pb-[calc(0.65rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur md:px-4 lg:hidden">
+      <nav className="fd-shell-mobile-nav fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/96 px-2 pb-[calc(0.65rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur md:px-4 lg:hidden">
         <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
           {navItems.map((item) => (
             <NavEntry key={item.to} item={item} mobile />

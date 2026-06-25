@@ -97,6 +97,7 @@ export function TodayPage() {
   const todayWorkoutTitle = snapshot?.workout.cycleDay.title ?? 'Training day';
   const heroContent = snapshot?.workout.cycleDay ? getWorkoutHeroCopy(snapshot.workout.cycleDay) : getTodayHeroContent(null);
   const todayDayMedia = getDayMedia(snapshot?.workout.cycleDay.dayNumber ?? 1);
+  const todayWorkoutComplete = snapshot?.workout.sessionCompleted ?? false;
 
   return (
     <div className="space-y-6">
@@ -120,13 +121,24 @@ export function TodayPage() {
           </p>
           <p className="mt-6 max-w-2xl text-lg leading-7 text-white/84">{heroContent.command}</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link
-              to={`/workout?date=${snapshot?.todayIso ?? format(new Date(), 'yyyy-MM-dd')}`}
-              className="fd-button-accent min-w-[176px]"
-            >
-              <Play className="h-4 w-4" />
-              Start session
-            </Link>
+            {todayWorkoutComplete ? (
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: document.body.scrollHeight * 0.45, behavior: 'smooth' })}
+                className="fd-button-accent min-w-[176px]"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Continue intake
+              </button>
+            ) : (
+              <Link
+                to={`/workout?date=${snapshot?.todayIso ?? format(new Date(), 'yyyy-MM-dd')}`}
+                className="fd-button-accent min-w-[176px]"
+              >
+                <Play className="h-4 w-4" />
+                Start session
+              </Link>
+            )}
             <div className="inline-flex min-h-12 items-center rounded-2xl border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/86">
               {commandSummary?.nextAction ?? 'Start the session. Save the sets. Finish clean.'}
             </div>
@@ -170,8 +182,8 @@ export function TodayPage() {
               to={`/workout?date=${snapshot?.todayIso ?? format(new Date(), 'yyyy-MM-dd')}`}
               className="fd-button-accent"
             >
-              <Play className="h-4 w-4" />
-              Start session
+              {todayWorkoutComplete ? <CheckCircle2 className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              {todayWorkoutComplete ? 'Review session' : 'Start session'}
             </Link>
           }
         >

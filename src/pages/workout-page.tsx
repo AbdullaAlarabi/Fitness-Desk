@@ -54,6 +54,7 @@ export function WorkoutPage() {
   const [showCoachNotes, setShowCoachNotes] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [showFullPlan, setShowFullPlan] = useState(false);
+  const [demoImageFailed, setDemoImageFailed] = useState(false);
   const [runType, setRunType] = useState<RunningSessionType>('controlled_3_2km');
   const [distanceInput, setDistanceInput] = useState(RUN_TARGET_DISTANCE_KM.toString());
   const [durationInput, setDurationInput] = useState('1200');
@@ -93,15 +94,35 @@ export function WorkoutPage() {
     [snapshot?.exercises]
   );
   const dayMedia = getDayMedia(snapshot?.planConfig?.dayNumber ?? 1);
+  const isActiveGymWorkout = Boolean(snapshot?.session && snapshot.sessionType === 'gym' && !workoutComplete);
 
-  async function loadSnapshot() {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isActiveGymWorkout) {
+      document.body.classList.add('fd-workout-active-mobile');
+      return () => document.body.classList.remove('fd-workout-active-mobile');
+    }
+
+    document.body.classList.remove('fd-workout-active-mobile');
+    return undefined;
+  }, [isActiveGymWorkout]);
+
+  useEffect(() => {
+    setDemoImageFailed(false);
+  }, [currentExercise?.key, showDemo]);
+
+  async function loadSnapshot(preferredExerciseIndex?: number) {
     setLoading(true);
     setError('');
     try {
       const next = await getWorkoutModeSnapshot(dateIso);
       setSnapshot(next);
       setSessionNotes(next.session?.notes ?? '');
-      setExerciseIndex(findResumeExerciseIndex(next.exercises));
+      if (typeof preferredExerciseIndex === 'number') {
+        setExerciseIndex(Math.min(preferredExerciseIndex, Math.max(next.exercises.length - 1, 0)));
+      } else {
+        setExerciseIndex(findResumeExerciseIndex(next.exercises));
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load workout mode.');
     } finally {
@@ -115,7 +136,7 @@ export function WorkoutPage() {
     setSuccess('');
     try {
       await ensureWorkoutSession(dateIso);
-      await loadSnapshot();
+      await loadSnapshot(exerciseIndex);
     } catch (sessionError) {
       setError(sessionError instanceof Error ? sessionError.message : 'Could not start the workout.');
     } finally {
@@ -332,27 +353,45 @@ export function WorkoutPage() {
 
   return (
     <div className="space-y-6">
-      <SectionCard
-        title="Workout player"
-        eyebrow={format(new Date(`${dateIso}T12:00:00`), 'EEEE, MMMM d')}
-        action={
-          <button type="button" onClick={() => void loadSnapshot()} className="fd-button-secondary min-h-11 px-4">
-            Refresh
-          </button>
-        }
-      >
-        <div className="grid gap-3 sm:grid-cols-3">
-          <MiniMeta label="Workout" value={snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? 'Session'} />
-          <MiniMeta
-            label="Focus"
-            value={snapshot?.planConfig?.focus ?? snapshot?.template?.description ?? 'Training focus'}
-          />
-          <MiniMeta
-            label="Duration"
-            value={`${snapshot?.planConfig?.estimatedDurationMinutes ?? 60} min`}
-          />
+      {isActiveGymWorkout ? (
+        <div className="rounded-2xl border border-line bg-white px-4 py-3 lg:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-teal">
+                {snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? 'Workout'}
+              </p>
+              <p className="mt-1 text-xs font-medium text-muted">
+                Exercise {exerciseIndex + 1}/{snapshot?.exercises.length ?? 0} · {completedSetCount}/{totalSets} sets
+              </p>
+            </div>
+            <button type="button" onClick={() => void loadSnapshot()} className="fd-button-secondary min-h-10 px-3 text-xs">
+              Refresh
+            </button>
+          </div>
         </div>
-      </SectionCard>
+      ) : (
+        <SectionCard
+          title="Workout player"
+          eyebrow={format(new Date(`${dateIso}T12:00:00`), 'EEEE, MMMM d')}
+          action={
+            <button type="button" onClick={() => void loadSnapshot()} className="fd-button-secondary min-h-11 px-4">
+              Refresh
+            </button>
+          }
+        >
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MiniMeta label="Workout" value={snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? 'Session'} />
+            <MiniMeta
+              label="Focus"
+              value={snapshot?.planConfig?.focus ?? snapshot?.template?.description ?? 'Training focus'}
+            />
+            <MiniMeta
+              label="Duration"
+              value={`${snapshot?.planConfig?.estimatedDurationMinutes ?? 60} min`}
+            />
+          </div>
+        </SectionCard>
+      )}
 
       {error ? <ErrorBanner message={error} /> : null}
       {success ? <SuccessBanner message={success} /> : null}
@@ -495,7 +534,7 @@ export function WorkoutPage() {
       {snapshot && snapshot.sessionType === 'gym' && snapshot.session && !workoutComplete && currentExercise ? (
         <section className="space-y-4">
           <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player">
-            <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
+            <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-4 sm:p-5">
               <div>
                 <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
                 <p className="mt-2 text-sm text-muted">
@@ -701,11 +740,18 @@ export function WorkoutPage() {
       {showDemo && currentExercise ? (
         <BottomSheet title="Demo" onClose={() => setShowDemo(false)}>
           <div className="space-y-4">
-            <img
-              src={currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? assetUrl('assets/exercises/demo-placeholder.svg')}
-              alt={currentExercise.mediaAlt}
-              className="w-full rounded-[24px] border border-line object-cover"
-            />
+            {demoImageFailed ? (
+              <div className="rounded-[24px] border border-line bg-card px-4 py-10 text-center text-sm text-muted">
+                Demo image not available yet.
+              </div>
+            ) : (
+              <img
+                src={currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? assetUrl('assets/exercises/demo-placeholder.svg')}
+                alt={currentExercise.mediaAlt}
+                className="w-full rounded-[24px] border border-line object-cover"
+                onError={() => setDemoImageFailed(true)}
+              />
+            )}
             <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
             <CoachRow label="Main cue" value={currentExercise.mainCue} />
           </div>

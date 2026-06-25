@@ -5,7 +5,6 @@ import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
 import { getWorkoutPlanDayByTemplate, workoutRules, type WorkoutPlanDayConfig } from '../data/workout-plan';
 import { resolveTrainingDayForDate } from './trainingCycle';
-import { buildMissingMigrationError, isMissingColumnError } from './shared';
 import type {
   ScheduledWorkoutRow,
   TemplateExerciseRow,
@@ -232,7 +231,6 @@ export async function saveWorkoutSet(input: {
   setNumber: number;
   reps: number;
   weightKg: number | null;
-  rpe: number | null;
   notes: string | null;
   restSeconds: number;
 }) {
@@ -254,7 +252,7 @@ export async function saveWorkoutSet(input: {
     weight_value: input.weightKg,
     weight_unit: input.weightKg !== null ? 'kg' : null,
     rest_seconds: input.restSeconds,
-    rpe: input.rpe,
+    completed: true,
     notes: input.notes
   };
 
@@ -292,7 +290,6 @@ export async function completeWorkoutSession(input: {
   sessionId: string;
   scheduledWorkoutId: string | null;
   durationMinutes: number | null;
-  overallRpe: number | null;
   notes: string | null;
 }) {
   const client = getSupabaseClient();
@@ -301,31 +298,13 @@ export async function completeWorkoutSession(input: {
     .from('workout_sessions')
     .update({
       duration_minutes: input.durationMinutes,
-      ...(input.overallRpe !== null ? { overall_rpe: input.overallRpe } : {}),
       notes: input.notes
     })
     .eq('workspace_id', WORKSPACE_ID)
     .eq('id', input.sessionId);
 
   if (sessionUpdate.error) {
-    if (!isMissingColumnError(sessionUpdate.error, 'workout_sessions.overall_rpe')) {
-      throw sessionUpdate.error;
-    }
-
-    const fallbackUpdate = await client
-      .from('workout_sessions')
-      .update({
-        duration_minutes: input.durationMinutes,
-        notes: input.notes
-      })
-      .eq('workspace_id', WORKSPACE_ID)
-      .eq('id', input.sessionId);
-
-    if (fallbackUpdate.error) {
-      throw buildMissingMigrationError(
-        'Workout session completion is blocked by a missing Supabase column. Run migration 007 to add `workout_sessions.overall_rpe`.'
-      );
-    }
+    throw sessionUpdate.error;
   }
 
   if (input.scheduledWorkoutId) {
@@ -354,7 +333,6 @@ export function getProgressionRecommendation(exercise: WorkoutExerciseStep): Pro
   if (!topRep || !bottomRep || exercise.setLogs.length < exercise.setCount) return null;
   const allAtTop = exercise.setLogs.every((setLog) => (setLog.reps ?? 0) >= topRep);
   const anyBelowMin = exercise.setLogs.some((setLog) => (setLog.reps ?? 0) < bottomRep);
-  const anyHighRpe = exercise.setLogs.some((setLog) => (setLog.rpe ?? 0) > 9);
   const lastWeight = exercise.setLogs[exercise.setLogs.length - 1]?.weight_value ?? null;
 
   if (allAtTop && lastWeight !== null) {
@@ -364,10 +342,10 @@ export function getProgressionRecommendation(exercise: WorkoutExerciseStep): Pro
     };
   }
 
-  if (anyBelowMin || anyHighRpe) {
+  if (anyBelowMin) {
     return {
       tone: 'reduce',
-      message: `Reduce weight slightly or repeat this load. One or more sets missed ${bottomRep} reps or effort ran too high.`
+      message: `Reduce weight slightly or repeat this load. One or more sets missed ${bottomRep} reps.`
     };
   }
 

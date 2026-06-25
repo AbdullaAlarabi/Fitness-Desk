@@ -1,6 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { CheckCircle2, ChevronDown, ChevronRight, Loader2, Play, SkipForward, Shuffle } from 'lucide-react';
+import {
+  CheckCircle2,
+  ChevronRight,
+  Loader2,
+  Play,
+  SkipForward,
+  TimerReset,
+  X
+} from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, SectionCard, StateCard } from '../components/ui';
 import { getPlanDayByDate, markPlanDayStatusByDate, shiftPlanForward } from '../services/planService';
@@ -20,7 +28,6 @@ import {
   getProgressionSuggestion,
   getWorkoutModeSnapshot,
   saveWorkoutSet,
-  getProgressionRecommendation,
   type WorkoutExerciseStep,
   type WorkoutModeSnapshot
 } from '../services/workoutSessionMode';
@@ -31,27 +38,25 @@ export function WorkoutPage() {
   const [snapshot, setSnapshot] = useState<WorkoutModeSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [sessionLoading, setSessionLoading] = useState(false);
   const [setSaving, setSetSaving] = useState(false);
-  const [completeSaving, setCompleteSaving] = useState(false);
+  const [finishSaving, setFinishSaving] = useState(false);
   const [exerciseIndex, setExerciseIndex] = useState(0);
-  const [repsInput, setRepsInput] = useState('');
   const [weightInput, setWeightInput] = useState('');
-  const [rpeInput, setRpeInput] = useState('');
-  const [notesInput, setNotesInput] = useState('');
+  const [repsInput, setRepsInput] = useState('');
   const [sessionNotes, setSessionNotes] = useState('');
-  const [overallRpeInput, setOverallRpeInput] = useState('');
   const [restRemaining, setRestRemaining] = useState(0);
   const [restActive, setRestActive] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [showCoachNotes, setShowCoachNotes] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+  const [showFullPlan, setShowFullPlan] = useState(false);
   const [runType, setRunType] = useState<RunningSessionType>('controlled_3_2km');
   const [distanceInput, setDistanceInput] = useState(RUN_TARGET_DISTANCE_KM.toString());
   const [durationInput, setDurationInput] = useState('1200');
   const [treadmillSpeedInput, setTreadmillSpeedInput] = useState('');
-  const [runRpeInput, setRunRpeInput] = useState('');
   const [runSaving, setRunSaving] = useState(false);
-  const [expandedExerciseKey, setExpandedExerciseKey] = useState<string | null>(null);
-  const [setCompletedChecked, setSetCompletedChecked] = useState(true);
-  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     void loadSnapshot();
@@ -71,25 +76,20 @@ export function WorkoutPage() {
   }, [restActive, restRemaining]);
 
   const currentExercise = snapshot?.exercises[exerciseIndex] ?? null;
-  const fallbackExerciseCards = snapshot?.planConfig?.detailLevel === 'exact' ? snapshot.planConfig.exercises : [];
-  const showFallbackExerciseCards =
-    (snapshot?.planConfig?.sessionType === 'gym' || snapshot?.planConfig?.sessionType === 'run') &&
-    fallbackExerciseCards.length > 0 &&
-    (snapshot?.exercises.length ?? 0) === 0;
-  const completedSets = currentExercise?.setLogs.length ?? 0;
-  const currentSetNumber = Math.min(completedSets + 1, currentExercise?.setCount ?? 1);
-  const progressionSuggestion = currentExercise ? getProgressionSuggestion(currentExercise) : null;
-  const progressionRecommendation = currentExercise ? getProgressionRecommendation(currentExercise) : null;
-
-  useEffect(() => {
-    if (!currentExercise) return;
-    setNotesInput(currentExercise.notes ?? '');
-  }, [currentExercise?.key]);
-
-  useEffect(() => {
-    if (!currentExercise) return;
-    setExpandedExerciseKey(null);
-  }, [currentExercise?.key]);
+  const completedSets = currentExercise ? getLoggedSetCount(currentExercise) : 0;
+  const currentSetNumber = currentExercise ? Math.min(completedSets + 1, currentExercise.setCount) : 1;
+  const workoutComplete = Boolean(
+    snapshot?.session &&
+      snapshot.sessionType === 'gym' &&
+      snapshot.exercises.length > 0 &&
+      snapshot.exercises.every((exercise) => getLoggedSetCount(exercise) >= exercise.setCount)
+  );
+  const totalSets = snapshot?.exercises.reduce((sum, exercise) => sum + exercise.setCount, 0) ?? 0;
+  const completedSetCount = snapshot?.exercises.reduce((sum, exercise) => sum + getLoggedSetCount(exercise), 0) ?? 0;
+  const previewExercises = useMemo(
+    () => snapshot?.exercises.slice(0, 5).map((exercise) => exercise.exerciseName) ?? [],
+    [snapshot?.exercises]
+  );
 
   async function loadSnapshot() {
     setLoading(true);
@@ -98,8 +98,7 @@ export function WorkoutPage() {
       const next = await getWorkoutModeSnapshot(dateIso);
       setSnapshot(next);
       setSessionNotes(next.session?.notes ?? '');
-      setOverallRpeInput(next.session?.overall_rpe?.toString() ?? '');
-      setExerciseIndex((current) => Math.min(current, Math.max(next.exercises.length - 1, 0)));
+      setExerciseIndex(findResumeExerciseIndex(next.exercises));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load workout mode.');
     } finally {
@@ -107,67 +106,55 @@ export function WorkoutPage() {
     }
   }
 
-  async function startSession() {
+  async function startWorkout() {
     setSessionLoading(true);
     setError('');
+    setSuccess('');
     try {
       await ensureWorkoutSession(dateIso);
       await loadSnapshot();
     } catch (sessionError) {
-      setError(sessionError instanceof Error ? sessionError.message : 'Could not start the session.');
+      setError(sessionError instanceof Error ? sessionError.message : 'Could not start the workout.');
     } finally {
       setSessionLoading(false);
     }
   }
 
-  async function completeSet() {
+  async function handleSaveSet() {
     if (!snapshot?.session || !currentExercise) return;
+    const weight = Number(weightInput);
     const reps = Number(repsInput);
-    const weight = weightInput.trim() ? Number(weightInput) : null;
-    const rpe = rpeInput.trim() ? Number(rpeInput) : null;
+
+    if (!Number.isFinite(weight) || weight < 0) {
+      setError('Enter a valid weight in kg.');
+      return;
+    }
 
     if (!Number.isFinite(reps) || reps <= 0) {
-      setError('Enter reps completed before saving the set.');
-      return;
-    }
-    if (!setCompletedChecked) {
-      setError('Confirm the set is completed before saving it.');
-      return;
-    }
-
-    if (weight !== null && !Number.isFinite(weight)) {
-      setError('Weight must be a valid number in kg.');
-      return;
-    }
-
-    if (rpe !== null && !Number.isFinite(rpe)) {
-      setError('RPE must be a valid number.');
+      setError('Enter reps before saving the set.');
       return;
     }
 
     setSetSaving(true);
     setError('');
+    setSuccess('');
+
     try {
       await saveWorkoutSet({
         dateIso,
         sessionId: snapshot.session.id,
-        exercise: {
-          ...currentExercise,
-          notes: notesInput
-        },
+        exercise: currentExercise,
         setNumber: currentSetNumber,
         reps,
         weightKg: weight,
-        rpe,
-        notes: notesInput || null,
+        notes: null,
         restSeconds: currentExercise.restSeconds
       });
-      setRepsInput('');
       setWeightInput('');
-      setRpeInput('');
-      setSetCompletedChecked(true);
+      setRepsInput('');
       setRestRemaining(currentExercise.restSeconds);
       setRestActive(true);
+      setSuccess('Set saved. Rest started.');
       await loadSnapshot();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save the set.');
@@ -176,37 +163,33 @@ export function WorkoutPage() {
     }
   }
 
-  async function finishSession() {
+  async function handleFinishWorkout() {
     if (!snapshot?.session) return;
-    const overallRpe = overallRpeInput.trim() ? Number(overallRpeInput) : null;
-    if (overallRpe !== null && (!Number.isFinite(overallRpe) || overallRpe < 1 || overallRpe > 10)) {
-      setError('Overall RPE must be between 1 and 10.');
-      return;
-    }
-    setCompleteSaving(true);
+    setFinishSaving(true);
     setError('');
+    setSuccess('');
+
     try {
       await completeWorkoutSession({
         sessionId: snapshot.session.id,
         scheduledWorkoutId: snapshot.scheduledWorkout?.id ?? null,
         durationMinutes: calculateDurationMinutes(snapshot.session.created_at),
-        overallRpe,
         notes: sessionNotes || null
       });
+      setSuccess('Workout complete.');
       await loadSnapshot();
-    } catch (completeError) {
-      setError(completeError instanceof Error ? completeError.message : 'Could not complete the session.');
+    } catch (finishError) {
+      setError(finishError instanceof Error ? finishError.message : 'Could not finish the workout.');
     } finally {
-      setCompleteSaving(false);
+      setFinishSaving(false);
     }
   }
 
-  async function saveRun() {
+  async function handleSaveRun() {
     if (!snapshot?.session) return;
     const distance = Number(distanceInput);
     const duration = Number(durationInput);
     const treadmillSpeed = treadmillSpeedInput.trim() ? Number(treadmillSpeedInput) : null;
-    const rpe = runRpeInput.trim() ? Number(runRpeInput) : null;
 
     if (!Number.isFinite(distance) || distance <= 0) {
       setError('Distance must be a valid number in km.');
@@ -218,11 +201,6 @@ export function WorkoutPage() {
       return;
     }
 
-    if (rpe !== null && !Number.isFinite(rpe)) {
-      setError('RPE must be a valid number.');
-      return;
-    }
-
     if (treadmillSpeed !== null && !Number.isFinite(treadmillSpeed)) {
       setError('Treadmill speed must be a valid number in km/h.');
       return;
@@ -230,6 +208,7 @@ export function WorkoutPage() {
 
     setRunSaving(true);
     setError('');
+    setSuccess('');
     try {
       const result = await saveRunningSession({
         sessionDate: dateIso,
@@ -237,7 +216,6 @@ export function WorkoutPage() {
         distanceKm: distance,
         durationSeconds: duration,
         treadmillSpeedKmh: treadmillSpeed,
-        rpe,
         notes: sessionNotes || null
       });
       if (result.error) throw result.error;
@@ -245,9 +223,9 @@ export function WorkoutPage() {
         sessionId: snapshot.session.id,
         scheduledWorkoutId: snapshot.scheduledWorkout?.id ?? null,
         durationMinutes: calculateDurationMinutes(snapshot.session.created_at),
-        overallRpe: null,
         notes: sessionNotes || null
       });
+      setSuccess('Run saved.');
       await loadSnapshot();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save the run.');
@@ -256,22 +234,40 @@ export function WorkoutPage() {
     }
   }
 
-  async function skipWorkout() {
-    setCompleteSaving(true);
+  async function handleMarkWalkComplete() {
+    setFinishSaving(true);
     setError('');
+    setSuccess('');
+    try {
+      await markPlanDayStatusByDate(dateIso, 'completed');
+      setSuccess('Walk marked complete.');
+      await loadSnapshot();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : 'Could not complete the walk.');
+    } finally {
+      setFinishSaving(false);
+    }
+  }
+
+  async function handleSkipWorkout() {
+    setFinishSaving(true);
+    setError('');
+    setSuccess('');
     try {
       await markPlanDayStatusByDate(dateIso, 'skipped');
+      setSuccess('Workout skipped.');
       await loadSnapshot();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : 'Could not skip the workout.');
     } finally {
-      setCompleteSaving(false);
+      setFinishSaving(false);
     }
   }
 
-  async function shiftWorkout() {
-    setCompleteSaving(true);
+  async function handleShiftWorkout() {
+    setFinishSaving(true);
     setError('');
+    setSuccess('');
     try {
       const day = await getPlanDayByDate(dateIso);
       if (!day) throw new Error('Workout day not found.');
@@ -281,722 +277,484 @@ export function WorkoutPage() {
         shiftRemaining: false,
         useRecoveryDays: false
       });
+      setSuccess('Workout shifted forward.');
       await loadSnapshot();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : 'Could not shift the workout.');
     } finally {
-      setCompleteSaving(false);
+      setFinishSaving(false);
     }
+  }
+
+  function handleNextSet() {
+    setRestActive(false);
+    setRestRemaining(0);
+    setSuccess('');
+  }
+
+  function handleNextExercise() {
+    if (!snapshot) return;
+    const nextIndex = findNextIncompleteExerciseIndex(snapshot.exercises, exerciseIndex + 1);
+    setRestActive(false);
+    setRestRemaining(0);
+    setSuccess('');
+    setExerciseIndex(nextIndex);
+    setShowCoachNotes(false);
+    setShowDemo(false);
+  }
+
+  function handleJumpToExercise(targetIndex: number) {
+    if (!snapshot) return;
+    if (targetIndex === exerciseIndex) {
+      setShowFullPlan(false);
+      return;
+    }
+
+    const current = snapshot.exercises[exerciseIndex];
+    const currentIncomplete = current ? getLoggedSetCount(current) < current.setCount : false;
+
+    if (currentIncomplete) {
+      const confirmed = window.confirm('This exercise still has unfinished sets. Jump anyway?');
+      if (!confirmed) return;
+    }
+
+    setExerciseIndex(targetIndex);
+    setShowFullPlan(false);
+    setShowCoachNotes(false);
+    setShowDemo(false);
+    setRestActive(false);
+    setRestRemaining(0);
+    setSuccess('');
   }
 
   return (
     <div className="space-y-6">
       <SectionCard
-        title="Workout session mode"
+        title="Workout player"
         eyebrow={format(new Date(`${dateIso}T12:00:00`), 'EEEE, MMMM d')}
         action={
-          <button
-            type="button"
-            onClick={() => void loadSnapshot()}
-            className="fd-button-secondary min-h-11 px-4"
-          >
+          <button type="button" onClick={() => void loadSnapshot()} className="fd-button-secondary min-h-11 px-4">
             Refresh
           </button>
         }
       >
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Active template</p>
-            <p className="mt-2 text-2xl font-semibold text-teal">
-              {snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? snapshot?.template?.name ?? 'Scheduled session'}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {snapshot?.planConfig ? `Focus: ${snapshot.planConfig.focus}` : snapshot?.scheduledWorkout?.notes ?? snapshot?.template?.description ?? 'Workout mode will follow the scheduled day or the weekly template fallback.'}
-            </p>
-            {snapshot?.planConfig ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <MiniMeta label="Focus" value={snapshot.planConfig.focus} />
-                <MiniMeta label="Warm-up" value={snapshot.planConfig.warmup} />
-                <MiniMeta label="Duration" value={`${snapshot.planConfig.estimatedDurationMinutes} min`} />
-              </div>
-            ) : null}
-          </Card>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <SummaryCard label="Session type" value={snapshot?.planConfig?.sessionType ?? snapshot?.sessionType ?? '...'} />
-            <SummaryCard label="Saved sets" value={String(snapshot?.exercises.reduce((sum, exercise) => sum + exercise.setLogs.length, 0) ?? 0)} />
-            <SummaryCard label="Workout status" value={snapshot?.scheduledWorkout?.status ?? 'planned'} />
-          </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <MiniMeta label="Workout" value={snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? 'Session'} />
+          <MiniMeta
+            label="Focus"
+            value={snapshot?.planConfig?.focus ?? snapshot?.template?.description ?? 'Training focus'}
+          />
+          <MiniMeta
+            label="Duration"
+            value={`${snapshot?.planConfig?.estimatedDurationMinutes ?? 60} min`}
+          />
         </div>
       </SectionCard>
 
-      {snapshot?.workoutRules?.length ? (
-        <SectionCard title="Session rules" eyebrow="Keep it simple">
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal">
-              {snapshot.sessionType === 'rest'
-                ? 'Walk 30-45 min · easy pace · no hard run.'
-                : 'Clean reps · 1-2 reps in reserve · follow rest timer'}
+      {error ? <ErrorBanner message={error} /> : null}
+      {success ? <SuccessBanner message={success} /> : null}
+      {loading && !snapshot ? <StateCard title="Loading workout" message="Fetching the scheduled session." /> : null}
+
+      {snapshot?.sessionType === 'rest' ? (
+        <SectionCard title="Rest / Walking" eyebrow="Recovery day">
+          <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-5">
+            <div className="space-y-2 text-sm text-teal">
+              <p>Walk 30-45 minutes</p>
+              <p>Easy pace</p>
+              <p>No hard running</p>
+              <p>No leg workout</p>
             </div>
             <button
               type="button"
-              onClick={() => setShowRules((current) => !current)}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-teal"
+              onClick={() => void handleMarkWalkComplete()}
+              disabled={finishSaving}
+              className="fd-button-accent px-5 disabled:opacity-60"
             >
-              {showRules ? 'Hide rules' : 'View rules'}
-              <ChevronDown className={`h-4 w-4 transition ${showRules ? 'rotate-180' : ''}`} />
+              {finishSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Mark Walk Complete
             </button>
-            {showRules ? (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {snapshot.workoutRules.map((rule) => (
-                  <div key={rule} className="rounded-2xl border border-line bg-card px-4 py-3 text-sm leading-6 text-teal">
-                    {rule}
-                  </div>
-                ))}
-              </div>
-            ) : null}
           </div>
         </SectionCard>
       ) : null}
 
-      {error ? <ErrorBanner message={error} /> : null}
-      {loading && !snapshot ? <StateCard title="Loading session" message="Fetching workout data." /> : null}
-
-      {!snapshot?.session ? (
-        <SectionCard title="Start session" eyebrow="Ready">
-          <div className="flex flex-col gap-4 rounded-3xl border border-line/70 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-xl text-sm leading-6 text-muted">Start this session and begin logging.</p>
+      {snapshot && snapshot.sessionType === 'gym' && !snapshot.session ? (
+        <SectionCard title={snapshot.planConfig?.title ?? 'Workout'} eyebrow="Ready to start">
+          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
+            <div>
+              <p className="text-2xl font-semibold text-teal">{snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title}</p>
+              <p className="mt-2 text-sm text-muted">{snapshot.planConfig?.focus}</p>
+              <p className="mt-3 text-sm font-medium text-teal">
+                {snapshot.exercises.length} exercises · {snapshot.planConfig?.estimatedDurationMinutes ?? 60} min
+              </p>
+            </div>
             <button
               type="button"
-              onClick={() => void startSession()}
-              disabled={sessionLoading || loading}
-              className="fd-button-accent gap-2 px-5 disabled:opacity-60"
+              onClick={() => void startWorkout()}
+              disabled={sessionLoading}
+              className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 disabled:opacity-60"
             >
               {sessionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Start session
+              Start Workout
+            </button>
+            <div className="rounded-2xl border border-line bg-card px-4 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Preview</p>
+              <p className="mt-2 text-sm leading-6 text-teal">{previewExercises.join(' → ')}</p>
+            </div>
+          </div>
+        </SectionCard>
+      ) : null}
+
+      {snapshot && snapshot.sessionType === 'run' && !snapshot.session ? (
+        <SectionCard title={snapshot.planConfig?.title ?? 'Run session'} eyebrow="Ready to start">
+          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
+            <div>
+              <p className="text-2xl font-semibold text-teal">{snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title}</p>
+              <p className="mt-2 text-sm text-muted">{snapshot.planConfig?.focus}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void startWorkout()}
+              disabled={sessionLoading}
+              className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 disabled:opacity-60"
+            >
+              {sessionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              Start Workout
             </button>
           </div>
         </SectionCard>
       ) : null}
 
-      {snapshot && snapshot.sessionType !== 'rest' && snapshot.exercises.length > 0 ? (
-        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <SectionCard title="Active exercise" eyebrow={`Exercise ${exerciseIndex + 1} of ${Math.max(snapshot.exercises.length, 1)}`}>
-            {currentExercise ? (
-              <div className="space-y-5">
-                <Card>
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
-                      <p className="mt-2 text-sm text-muted">
-                        {currentExercise.setCount} x {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <MetricCard label="Target sets" value={String(currentExercise.setCount)} />
-                      <MetricCard
-                        label="Target reps"
-                        value={formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)}
-                      />
-                    </div>
-                  </div>
-                  {renderCoachNotes({
-                    exercise: currentExercise,
-                    expanded: expandedExerciseKey === currentExercise.key,
-                    onToggle: () => setExpandedExerciseKey((current) => (current === currentExercise.key ? null : currentExercise.key)),
-                    notesInput,
-                    onNotesChange: setNotesInput
-                  })}
-                </Card>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <InputBlock label="Set completed">
-                    <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-card px-4 text-base text-teal">
-                      <input
-                        type="checkbox"
-                        checked={setCompletedChecked}
-                        onChange={(event) => setSetCompletedChecked(event.target.checked)}
-                        className="h-4 w-4 accent-[#BCFF00]"
-                      />
-                      <span>Confirm set completion</span>
-                    </label>
-                  </InputBlock>
-                  <InputBlock label={`Set ${currentSetNumber} reps completed`}>
-                    <input
-                      type="number"
-                      min="0"
-                      value={repsInput}
-                      onChange={(event) => setRepsInput(event.target.value)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    />
-                  </InputBlock>
-                  <InputBlock label="Weight kg">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={weightInput}
-                      onChange={(event) => setWeightInput(event.target.value)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    />
-                  </InputBlock>
-                  <InputBlock label="RPE optional">
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      step="0.5"
-                      value={rpeInput}
-                      onChange={(event) => setRpeInput(event.target.value)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    />
-                  </InputBlock>
-                  <InputBlock label="Rest timer">
-                    <div className="flex min-h-12 items-center justify-between rounded-2xl border border-line bg-card px-4">
-                      <span className="text-base font-semibold text-teal">{formatSeconds(restRemaining || currentExercise.restSeconds)}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (restActive) {
-                            setRestActive(false);
-                          } else {
-                            setRestRemaining(restRemaining > 0 ? restRemaining : currentExercise.restSeconds);
-                            setRestActive(true);
-                          }
-                        }}
-                        className="text-sm font-semibold text-teal"
-                      >
-                        {restActive ? 'Pause' : 'Start'}
-                      </button>
-                    </div>
-                  </InputBlock>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void completeSet()}
-                    disabled={setSaving || completedSets >= currentExercise.setCount || !snapshot?.session}
-                    className="fd-button-accent gap-2 px-5 disabled:opacity-60"
-                  >
-                    {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    Complete set
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExerciseIndex((current) => Math.min(current + 1, snapshot.exercises.length - 1))}
-                    disabled={exerciseIndex >= snapshot.exercises.length - 1}
-                    className="fd-button-secondary gap-2 px-5 disabled:opacity-60"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                    Next exercise
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExerciseIndex((current) => Math.min(current + 1, snapshot.exercises.length - 1))}
-                    disabled={completedSets < currentExercise.setCount}
-                    className="fd-button-secondary gap-2 px-5 disabled:opacity-60"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Complete exercise
-                  </button>
-                </div>
-
-                {progressionSuggestion ? (
-                  <div
-                    className={[
-                      'rounded-3xl px-4 py-4 text-sm font-medium',
-                      progressionRecommendation?.tone === 'increase'
-                        ? 'border border-gold/25 bg-gold/10 text-teal'
-                        : progressionRecommendation?.tone === 'reduce'
-                          ? 'border border-red-200 bg-red-50 text-red-700'
-                          : 'border border-line bg-card text-teal'
-                    ].join(' ')}
-                  >
-                    {progressionSuggestion}
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <StateCard
-                title="No exact exercise list yet"
-                message={
-                  snapshot.planConfig?.detailLevel === 'split_only'
-                    ? 'This day is stored at split level only. Add the remaining coach exercise details when ready.'
-                    : 'No exercise rows for this session yet.'
+      {snapshot && snapshot.sessionType === 'run' && snapshot.session ? (
+        <SectionCard title="Run logger" eyebrow={snapshot.planConfig?.title ?? 'Run session'}>
+          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
+            <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal">
+              Clean reps · 1-2 reps in reserve · follow rest timer
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <InputBlock label="Run type">
+                <select
+                  value={runType}
+                  onChange={(event) => setRunType(event.target.value as RunningSessionType)}
+                  className="fd-input"
+                >
+                  <option value="interval">Interval run</option>
+                  <option value="tempo">Tempo run</option>
+                  <option value="controlled_3_2km">Controlled 3.2 km run</option>
+                  <option value="test">3.2 km test</option>
+                </select>
+              </InputBlock>
+              <InputBlock label="Distance km">
+                <input type="number" min="0" step="0.1" value={distanceInput} onChange={(event) => setDistanceInput(event.target.value)} className="fd-input" />
+              </InputBlock>
+              <InputBlock label="Duration seconds">
+                <input type="number" min="0" step="1" value={durationInput} onChange={(event) => setDurationInput(event.target.value)} className="fd-input" />
+              </InputBlock>
+              <InputBlock label="Treadmill speed km/h">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={treadmillSpeedInput}
+                  onChange={(event) => setTreadmillSpeedInput(event.target.value)}
+                  className="fd-input"
+                />
+              </InputBlock>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniMeta label="Target pace" value={formatPace(durationSecondsToPace(RUN_TARGET_DISTANCE_KM, RUN_TARGET_TIME_SECONDS))} />
+              <MiniMeta
+                label="Current speed"
+                value={
+                  Number.isFinite(Number(durationInput)) && Number(durationInput) > 0
+                    ? `${durationSecondsToSpeedKmh(Number(distanceInput) || RUN_TARGET_DISTANCE_KM, Number(durationInput)).toFixed(1)} km/h`
+                    : '--'
                 }
               />
-            )}
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleSaveRun()}
+              disabled={runSaving}
+              className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 disabled:opacity-60"
+            >
+              {runSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Save Run
+            </button>
+          </div>
+        </SectionCard>
+      ) : null}
+
+      {snapshot && snapshot.sessionType === 'gym' && snapshot.session && !workoutComplete && currentExercise ? (
+        <section className="space-y-4">
+          <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player">
+            <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
+              <div>
+                <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
+                <p className="mt-2 text-sm text-muted">
+                  {currentExercise.setCount} sets · {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} reps · Rest {currentExercise.restSeconds}s
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-line bg-card px-4 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Current set</p>
+                <p className="mt-2 text-xl font-semibold text-teal">
+                  Set {currentSetNumber} of {currentExercise.setCount}
+                </p>
+              </div>
+
+              {completedSets < currentExercise.setCount ? (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <InputBlock label="Weight kg">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={weightInput}
+                        onChange={(event) => setWeightInput(event.target.value)}
+                        className="fd-input"
+                      />
+                    </InputBlock>
+                    <InputBlock label="Reps">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={repsInput}
+                        onChange={(event) => setRepsInput(event.target.value)}
+                        className="fd-input"
+                      />
+                    </InputBlock>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveSet()}
+                    disabled={setSaving}
+                    className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 text-base disabled:opacity-60"
+                  >
+                    {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    Save Set
+                  </button>
+                </>
+              ) : null}
+
+              {restActive ? (
+                <div className="rounded-2xl border border-line bg-card px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Rest timer</p>
+                  <p className="mt-2 text-2xl font-semibold text-teal">{formatSeconds(restRemaining)}</p>
+                  <div className="mt-4 flex gap-2">
+                    <button type="button" onClick={() => setRestActive(false)} className="fd-button-secondary min-h-11 px-4">
+                      <TimerReset className="h-4 w-4" />
+                      Skip Rest
+                    </button>
+                    <button type="button" onClick={handleNextSet} className="fd-button-secondary min-h-11 px-4">
+                      <ChevronRight className="h-4 w-4" />
+                      Next Set
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap gap-2">
+                <SmallButton onClick={() => setShowCoachNotes(true)}>Coach notes</SmallButton>
+                <SmallButton onClick={() => setShowDemo(true)}>Demo</SmallButton>
+                <SmallButton onClick={() => setShowFullPlan(true)}>View full plan</SmallButton>
+              </div>
+
+              <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal">
+                Clean reps · 1-2 reps in reserve · follow rest timer
+              </div>
+              <button type="button" onClick={() => setShowRules(true)} className="text-sm font-semibold text-teal">
+                View rules
+              </button>
+            </div>
           </SectionCard>
 
-          <SectionCard title="Exercise list" eyebrow="Scheduled session plan">
-            <div className="space-y-4">
-              {!snapshot?.session ? (
-                <StateCard title="Logging unlocks after start" message="The full exercise list is ready. Start the session to save sets and notes." />
+          {completedSets >= currentExercise.setCount ? (
+            <Card className="space-y-4">
+              <p className="text-lg font-semibold text-teal">Exercise complete.</p>
+              <p className="text-sm text-muted">
+                {exerciseIndex < snapshot.exercises.length - 1
+                  ? `Next: ${snapshot.exercises[findNextIncompleteExerciseIndex(snapshot.exercises, exerciseIndex + 1)]?.exerciseName ?? 'Finish workout'}`
+                  : 'All planned exercises are done.'}
+              </p>
+              {getProgressionSuggestion(currentExercise) ? (
+                <p className="text-sm text-muted">{getProgressionSuggestion(currentExercise)}</p>
               ) : null}
-              {(snapshot.exercises ?? []).map((exercise, index) => (
-                <div key={exercise.key} className="rounded-3xl border border-line/70 bg-white p-4">
+              {exerciseIndex < snapshot.exercises.length - 1 ? (
+                <button type="button" onClick={handleNextExercise} className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5">
+                  <ChevronRight className="h-4 w-4" />
+                  Next Exercise
+                </button>
+              ) : null}
+            </Card>
+          ) : null}
+        </section>
+      ) : null}
+
+      {snapshot && snapshot.sessionType === 'gym' && snapshot.session && workoutComplete ? (
+        <SectionCard title="Workout complete" eyebrow="Finish workout">
+          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniMeta label="Exercises completed" value={`${snapshot.exercises.length} / ${snapshot.exercises.length}`} />
+              <MiniMeta label="Sets completed" value={`${completedSetCount} / ${totalSets}`} />
+            </div>
+            <InputBlock label="Optional notes">
+              <textarea
+                value={sessionNotes}
+                onChange={(event) => setSessionNotes(event.target.value)}
+                rows={4}
+                className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
+              />
+            </InputBlock>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => void handleFinishWorkout()}
+                disabled={finishSaving}
+                className="fd-button-accent min-h-12 flex-1 justify-center gap-2 px-5 disabled:opacity-60"
+              >
+                {finishSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Finish Workout
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSkipWorkout()}
+                disabled={finishSaving}
+                className="fd-button-secondary min-h-12 px-5 disabled:opacity-60"
+              >
+                <SkipForward className="h-4 w-4" />
+                Skip
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleShiftWorkout()}
+                disabled={finishSaving}
+                className="fd-button-secondary min-h-12 px-5 disabled:opacity-60"
+              >
+                Shift
+              </button>
+            </div>
+          </div>
+        </SectionCard>
+      ) : null}
+
+      {showFullPlan && snapshot ? (
+        <BottomSheet title="Full plan" onClose={() => setShowFullPlan(false)}>
+          <div className="space-y-3">
+            {snapshot.exercises.map((exercise, index) => {
+              const loggedSets = getLoggedSetCount(exercise);
+              const status = getExerciseStatus(exercise, index, exerciseIndex);
+              return (
+                <button
+                  key={exercise.key}
+                  type="button"
+                  onClick={() => handleJumpToExercise(index)}
+                  className="w-full rounded-2xl border border-line bg-card px-4 py-4 text-left"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-teal">{index + 1}. {exercise.exerciseName}</p>
                       <p className="mt-1 text-sm text-muted">
-                        {exercise.setCount} x {formatRepRange(exercise.repRangeMin, exercise.repRangeMax)} · Rest {exercise.restSeconds}s
+                        {loggedSets}/{exercise.setCount} sets done
                       </p>
-                      {exercise.targetMuscles ? <p className="mt-1 text-xs text-muted">{exercise.targetMuscles}</p> : null}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setExerciseIndex(index)}
-                      className="text-sm font-semibold text-teal"
-                    >
-                      Log here
-                    </button>
+                    <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold capitalize text-teal">
+                      {status}
+                    </span>
                   </div>
-                  {renderCoachNotes({
-                    exercise,
-                    expanded: expandedExerciseKey === exercise.key,
-                    onToggle: () => setExpandedExerciseKey((current) => (current === exercise.key ? null : exercise.key))
-                  })}
-                  {exercise.setLogs.length > 0 ? (
-                    <div className="mt-3 space-y-2">
-                      {exercise.setLogs.map((setLog) => (
-                        <div key={setLog.id} className="flex items-center justify-between rounded-2xl border border-line bg-card px-3 py-3 text-sm text-muted">
-                          <span className="inline-flex items-center gap-2">
-                            <CheckCircle2 className={`h-4 w-4 ${setLog.completed ? 'text-teal' : 'text-muted'}`} />
-                            Set {setLog.set_number}
-                          </span>
-                          <span>{setLog.reps ?? '-'} reps</span>
-                          <span>{setLog.weight_value ?? '-'} kg</span>
-                          <span>RPE {setLog.rpe ?? '-'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheet>
+      ) : null}
+
+      {showCoachNotes && currentExercise ? (
+        <BottomSheet title="Coach notes" onClose={() => setShowCoachNotes(false)}>
+          <div className="space-y-3">
+            <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
+            <CoachRow label="Main cue" value={currentExercise.mainCue} />
+            <CoachRow label="Common mistake" value={currentExercise.commonMistake} />
+            <CoachRow label="Alternative machine" value={currentExercise.alternatives[0] ?? null} />
+          </div>
+        </BottomSheet>
+      ) : null}
+
+      {showDemo && currentExercise ? (
+        <BottomSheet title="Demo" onClose={() => setShowDemo(false)}>
+          <div className="space-y-4">
+            <div className="overflow-hidden rounded-[24px] border border-line bg-teal">
+              <div className="flex h-56 w-full flex-col items-center justify-center gap-3 bg-teal px-6 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold text-teal">
+                  <Play className="h-5 w-5" />
                 </div>
-              ))}
-
-              <InputBlock label="Session notes">
-                <textarea
-                  value={sessionNotes}
-                  onChange={(event) => setSessionNotes(event.target.value)}
-                  rows={4}
-                  className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
-                />
-              </InputBlock>
-
-              <InputBlock label="Overall RPE">
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  step="1"
-                  value={overallRpeInput}
-                  onChange={(event) => setOverallRpeInput(event.target.value)}
-                  className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                />
-              </InputBlock>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={() => void finishSession()}
-                  disabled={completeSaving || !snapshot?.session}
-                  className="fd-button-accent gap-2 px-5 disabled:opacity-60"
-                >
-                  {completeSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Complete
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void skipWorkout()}
-                  disabled={completeSaving || !snapshot?.scheduledWorkout}
-                  className="fd-button-secondary gap-2 px-5 disabled:opacity-60"
-                >
-                  <SkipForward className="h-4 w-4" />
-                  Skip
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void shiftWorkout()}
-                  disabled={completeSaving || !snapshot?.scheduledWorkout}
-                  className="fd-button-secondary gap-2 px-5 disabled:opacity-60"
-                >
-                  <Shuffle className="h-4 w-4" />
-                  Shift
-                </button>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold">Demo media placeholder</p>
+                <p className="max-w-xs text-sm text-white/70">Licensed image or GIF can be added here later.</p>
               </div>
             </div>
-          </SectionCard>
-        </section>
-      ) : null}
-
-      {snapshot && snapshot.sessionType !== 'gym' && snapshot.planConfig?.sessionType !== 'gym' ? (
-        <SectionCard title="Session overview" eyebrow={snapshot.sessionType}>
-          <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-5">
-            <p className="text-lg font-semibold text-teal">{snapshot.scheduledWorkout?.title ?? snapshot.template?.name ?? 'Session'}</p>
-            <p className="text-sm leading-6 text-muted">
-              {snapshot.sessionType === 'rest'
-                ? 'Walk 30-45 min · easy pace · no hard run.'
-                : snapshot.sessionType === 'run'
-                  ? 'Log the run and save the result.'
-                  : 'Save the session with notes.'}
-            </p>
-            {snapshot.sessionType === 'run' ? (
-              <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <InputBlock label="Run type">
-                    <select
-                      value={runType}
-                      onChange={(event) => setRunType(event.target.value as typeof runType)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    >
-                      <option value="interval">Interval run</option>
-                      <option value="tempo">Tempo run</option>
-                      <option value="controlled_3_2km">Controlled 3.2 km run</option>
-                      <option value="test">3.2 km test</option>
-                    </select>
-                  </InputBlock>
-                  <InputBlock label="Distance km">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={distanceInput}
-                      onChange={(event) => setDistanceInput(event.target.value)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    />
-                  </InputBlock>
-                  <InputBlock label="Duration seconds">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={durationInput}
-                      onChange={(event) => setDurationInput(event.target.value)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    />
-                  </InputBlock>
-                  <InputBlock label="Treadmill speed km/h optional">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={treadmillSpeedInput}
-                      onChange={(event) => setTreadmillSpeedInput(event.target.value)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    />
-                  </InputBlock>
-                  <InputBlock label="Perceived effort / RPE">
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      step="0.5"
-                      value={runRpeInput}
-                      onChange={(event) => setRunRpeInput(event.target.value)}
-                      className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
-                    />
-                  </InputBlock>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <SummaryCard label="Target 3.2 km" value={formatRunTime(RUN_TARGET_TIME_SECONDS)} />
-                  <SummaryCard
-                    label="Target pace"
-                    value={formatPace(durationSecondsToPace(RUN_TARGET_DISTANCE_KM, RUN_TARGET_TIME_SECONDS))}
-                  />
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <SummaryCard
-                    label="Current pace"
-                    value={
-                      Number.isFinite(Number(durationInput)) && Number(durationInput) > 0
-                        ? formatPace(durationSecondsToPace(Number(distanceInput) || RUN_TARGET_DISTANCE_KM, Number(durationInput)))
-                        : '--'
-                    }
-                  />
-                  <SummaryCard
-                    label="Current speed"
-                    value={
-                      Number.isFinite(Number(durationInput)) && Number(durationInput) > 0
-                        ? `${durationSecondsToSpeedKmh(Number(distanceInput) || RUN_TARGET_DISTANCE_KM, Number(durationInput)).toFixed(1)} km/h`
-                        : '--'
-                    }
-                  />
-                </div>
-
-                <InputBlock label="Notes">
-                  <textarea
-                    value={sessionNotes}
-                    onChange={(event) => setSessionNotes(event.target.value)}
-                    rows={4}
-                    className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
-                  />
-                </InputBlock>
-
-                <button
-                  type="button"
-                  onClick={() => void saveRun()}
-                  disabled={runSaving || !snapshot?.session}
-                  className="fd-button-accent gap-2 px-5 disabled:opacity-60"
-                >
-                  {runSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Save run
-                </button>
-              </div>
-            ) : (
-              <>
-                <InputBlock label="Session notes">
-                  <textarea
-                    value={sessionNotes}
-                    onChange={(event) => setSessionNotes(event.target.value)}
-                    rows={4}
-                    className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
-                  />
-                </InputBlock>
-                <button
-                  type="button"
-                  onClick={() => void finishSession()}
-                  disabled={completeSaving || !snapshot?.session}
-                  className="fd-button-accent gap-2 px-5 disabled:opacity-60"
-                >
-                  {completeSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Complete workout
-                </button>
-              </>
-            )}
+            <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
+            <CoachRow label="Main cue" value={currentExercise.mainCue} />
           </div>
-        </SectionCard>
+        </BottomSheet>
       ) : null}
 
-      {showFallbackExerciseCards ? (
-        <SectionCard
-          title={snapshot?.planConfig?.sessionType === 'run' ? 'Arms / core exercise cards' : 'Exercise cards'}
-          eyebrow={snapshot?.planConfig?.title ?? 'Workout plan'}
-        >
-          <div className="space-y-4">
-            {fallbackExerciseCards.map((exercise, index) => (
-              <Card key={exercise.id} className="space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xl font-semibold text-teal">{index + 1}. {exercise.name}</p>
-                    <p className="mt-2 text-sm font-medium text-teal">
-                      {exercise.sets} x {exercise.minReps}-{exercise.maxReps}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-line bg-field px-4 py-3 text-center">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Rest</p>
-                    <p className="mt-1 font-semibold text-teal">{exercise.restSeconds}s</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-line bg-field px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Target muscle</p>
-                  <p className="mt-2 text-sm text-teal">{exercise.targetMuscles ?? 'Training focus'}</p>
-                </div>
-                <details className="rounded-2xl border border-line bg-card px-4 py-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-teal">Coach notes</summary>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <CoachDetail label="Setup cue" value={exercise.machineSetup} />
-                    <CoachDetail label="Main coaching cue" value={exercise.mainCue} />
-                    <CoachDetail label="Common mistake" value={exercise.commonMistake} />
-                    <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
-                  </div>
-                </details>
-              </Card>
+      {showRules && snapshot ? (
+        <BottomSheet title="Session rules" onClose={() => setShowRules(false)}>
+          <div className="space-y-3">
+            {snapshot.workoutRules.map((rule) => (
+              <div key={rule} className="rounded-2xl border border-line bg-card px-4 py-3 text-sm text-teal">
+                {rule}
+              </div>
             ))}
           </div>
-        </SectionCard>
-      ) : null}
-      {!loading && snapshot && !snapshot.session && snapshot.sessionType === 'rest' ? (
-        <StateCard title="Rest day" message="No lifting log required." />
+        </BottomSheet>
       ) : null}
     </div>
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+function BottomSheet({
+  title,
+  onClose,
+  children
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-3xl border border-line/70 bg-white p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">{label}</p>
-      <p className="mt-2 text-lg font-semibold capitalize text-teal">{value}</p>
+    <div className="fixed inset-0 z-40 bg-black/30 px-4 pb-4 pt-20 sm:px-6">
+      <div className="mx-auto flex h-full max-w-xl flex-col justify-end">
+        <div className="rounded-[28px] border border-line bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
+            <p className="text-lg font-semibold text-teal">{title}</p>
+            <button type="button" onClick={onClose} className="rounded-2xl border border-line bg-card p-2 text-teal">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="max-h-[70vh] overflow-y-auto p-5">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function MiniMeta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-field px-3 py-3">
+    <div className="rounded-2xl border border-line bg-card px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</p>
       <p className="mt-2 text-sm font-semibold text-teal">{value}</p>
     </div>
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function SmallButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <div className="rounded-2xl border border-line/70 bg-card px-4 py-3 text-center">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-muted">{label}</p>
-      <p className="mt-1 font-semibold text-teal">{value}</p>
-    </div>
-  );
-}
-
-function CoachDetail({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null;
-
-  return (
-    <div className="rounded-2xl border border-line bg-field px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</p>
-      <p className="mt-2 text-sm leading-6 text-teal">{value}</p>
-    </div>
-  );
-}
-
-function ExerciseMediaPanel({
-  exercise,
-  expanded,
-  onToggle
-}: {
-  exercise: WorkoutExerciseStep;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const panelId = `exercise-demo-${exercise.key}`;
-
-  return (
-    <div className="mt-4 rounded-3xl border border-line bg-field/90 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Demo media</p>
-          <p className="mt-1 text-sm text-muted">Tap the image or open the panel for setup and cues.</p>
-        </div>
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-controls={panelId}
-          className="fd-button-secondary min-h-11 gap-2 px-4"
-        >
-          {expanded ? 'Close demo' : 'View demo'}
-          <ChevronDown className={`h-4 w-4 transition ${expanded ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        className="mt-4 block w-full overflow-hidden rounded-[24px] border border-line bg-teal text-left"
-      >
-        <div className="flex h-48 w-full flex-col items-center justify-center gap-3 bg-teal text-center sm:h-56">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold text-teal">
-            <Play className="h-5 w-5" />
-          </div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold">Demo media placeholder</p>
-          <p className="max-w-xs text-sm text-white/70">Expandable panel ready for licensed image or GIF later.</p>
-        </div>
-      </button>
-
-      {expanded ? (
-        <div id={panelId} className="mt-4 space-y-4">
-          <div className="overflow-hidden rounded-[24px] border border-line bg-teal">
-            <div className="flex h-64 w-full flex-col items-center justify-center gap-3 bg-teal text-center sm:h-72">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gold text-teal">
-                <Play className="h-6 w-6" />
-              </div>
-              <p className="text-base font-semibold uppercase tracking-[0.18em] text-gold">Demo media placeholder</p>
-              <p className="max-w-sm text-sm leading-6 text-white/72">
-                Exercise media can be added later without changing the logging flow.
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <CoachDetail label="Machine setup" value={exercise.machineSetup} />
-            <CoachDetail label="Target muscle" value={exercise.targetMuscles} />
-            <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
-            <CoachDetail label="Rest time" value={`${exercise.restSeconds} seconds`} />
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function CoachMediaPlaceholder() {
-  return (
-    <div className="overflow-hidden rounded-[24px] border border-line bg-teal">
-      <div className="flex h-48 w-full flex-col items-center justify-center gap-3 bg-teal px-6 text-center sm:h-56">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold text-teal">
-          <Play className="h-5 w-5" />
-        </div>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold">Demo media placeholder</p>
-        <p className="max-w-xs text-sm text-white/70">Ready for a licensed image or GIF later.</p>
-      </div>
-    </div>
-  );
-}
-
-function renderCoachNotes({
-  exercise,
-  expanded,
-  onToggle,
-  notesInput,
-  onNotesChange
-}: {
-  exercise: WorkoutExerciseStep;
-  expanded: boolean;
-  onToggle: () => void;
-  notesInput?: string;
-  onNotesChange?: (value: string) => void;
-}) {
-  const visibleNote = cleanExerciseNote(exercise.notes);
-  const hasCoachContent = Boolean(
-    exercise.targetMuscles ||
-      exercise.machineSetup ||
-      exercise.mainCue ||
-      exercise.commonMistake ||
-      exercise.alternatives.length ||
-      visibleNote ||
-      onNotesChange
-  );
-
-  if (!hasCoachContent) return null;
-
-  return (
-    <div className="mt-4 rounded-2xl border border-line bg-card px-4 py-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-3 text-left"
-      >
-        <span className="text-sm font-semibold text-teal">Coach notes</span>
-        <ChevronDown className={`h-4 w-4 text-teal transition ${expanded ? 'rotate-180' : ''}`} />
-      </button>
-      {expanded ? (
-        <div className="mt-4 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <CoachDetail label="Target muscles" value={exercise.targetMuscles} />
-            <CoachDetail label="Setup cue" value={exercise.machineSetup} />
-            <CoachDetail label="Main cue" value={exercise.mainCue} />
-            <CoachDetail label="Common mistake" value={exercise.commonMistake} />
-            <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
-            {visibleNote ? <CoachDetail label="Exercise note" value={visibleNote} /> : null}
-          </div>
-          <CoachMediaPlaceholder />
-          {onNotesChange ? (
-            <InputBlock label="Notes">
-              <textarea
-                value={notesInput ?? ''}
-                onChange={(event) => onNotesChange(event.target.value)}
-                rows={3}
-                className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
-              />
-            </InputBlock>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+    <button type="button" onClick={onClick} className="fd-button-secondary min-h-10 px-4 text-sm">
+      {children}
+    </button>
   );
 }
 
@@ -1009,12 +767,45 @@ function InputBlock({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-function ErrorBanner({ message }: { message: string }) {
+function CoachRow({ label, value }: { label: string; value: string | null }) {
+  if (!value) return null;
   return (
-    <div className="rounded-3xl border border-red-300 bg-red-50 px-4 py-4 text-sm text-red-700">
-      {message}
+    <div className="rounded-2xl border border-line bg-card px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</p>
+      <p className="mt-2 text-sm leading-6 text-teal">{value}</p>
     </div>
   );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return <div className="rounded-3xl border border-red-300 bg-red-50 px-4 py-4 text-sm text-red-700">{message}</div>;
+}
+
+function SuccessBanner({ message }: { message: string }) {
+  return <div className="rounded-3xl border border-line bg-white px-4 py-4 text-sm font-medium text-teal">{message}</div>;
+}
+
+function getLoggedSetCount(exercise: WorkoutExerciseStep) {
+  return exercise.setLogs.length;
+}
+
+function findResumeExerciseIndex(exercises: WorkoutExerciseStep[]) {
+  const nextIncomplete = exercises.findIndex((exercise) => getLoggedSetCount(exercise) < exercise.setCount);
+  return nextIncomplete >= 0 ? nextIncomplete : Math.max(exercises.length - 1, 0);
+}
+
+function findNextIncompleteExerciseIndex(exercises: WorkoutExerciseStep[], startIndex: number) {
+  const nextIncomplete = exercises.findIndex(
+    (exercise, index) => index >= startIndex && getLoggedSetCount(exercise) < exercise.setCount
+  );
+  return nextIncomplete >= 0 ? nextIncomplete : Math.max(exercises.length - 1, 0);
+}
+
+function getExerciseStatus(exercise: WorkoutExerciseStep, index: number, activeIndex: number) {
+  const loggedSets = getLoggedSetCount(exercise);
+  if (loggedSets >= exercise.setCount) return 'completed';
+  if (loggedSets > 0 || index === activeIndex) return 'in progress';
+  return 'not started';
 }
 
 function formatRepRange(min: number | null, max: number | null) {
@@ -1034,23 +825,4 @@ function formatSeconds(seconds: number) {
 function calculateDurationMinutes(createdAt: string) {
   const elapsedMs = Date.now() - new Date(createdAt).getTime();
   return Math.max(1, Math.round(elapsedMs / 60000));
-}
-
-function cleanExerciseNote(note: string | null) {
-  if (!note) return null;
-  const visibleSegment = note
-    .split('|')
-    .map((segment) => segment.trim())
-    .find((segment) => {
-      const normalized = segment.toLowerCase();
-      return (
-        normalized.length > 0 &&
-        !normalized.startsWith('media thumb:') &&
-        !normalized.startsWith('media full:') &&
-        !normalized.startsWith('media type:') &&
-        !normalized.startsWith('media alt:')
-      );
-    });
-
-  return visibleSegment ?? null;
 }

@@ -17,7 +17,6 @@ export type RunningSessionInput = {
   durationSeconds: number;
   treadmillSpeedKmh?: number | null;
   targetPaceSecondsPerKm?: number | null;
-  rpe?: number | null;
   notes?: string | null;
 };
 
@@ -66,7 +65,6 @@ export async function saveRunningSession(input: RunningSessionInput) {
     target_pace_seconds_per_km: targetPace,
     treadmill_speed_kmh: input.treadmillSpeedKmh ?? null,
     interval_summary: input.runType === 'interval' ? 'Interval run' : null,
-    rpe: input.rpe ?? null,
     notes: input.notes ?? null
   };
   const result = await runningSessionService.create(payload);
@@ -90,7 +88,6 @@ export async function saveRunningSession(input: RunningSessionInput) {
     duration_seconds: input.durationSeconds,
     pace_seconds_per_km: pace,
     interval_summary: input.runType === 'interval' ? 'Interval run' : null,
-    rpe: input.rpe ?? null,
     notes: input.notes ?? null
   });
 

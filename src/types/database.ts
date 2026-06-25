@@ -71,7 +71,7 @@ export type WorkoutSetLogRow = BaseRow & {
   weight_value: number | null;
   weight_unit: string | null;
   rest_seconds: number | null;
-  rpe: number | null;
+  rpe?: number | null;
   completed?: boolean;
   notes: string | null;
 };
@@ -85,7 +85,7 @@ export type RunningSessionRow = BaseRow & {
   target_pace_seconds_per_km?: number | null;
   treadmill_speed_kmh?: number | null;
   interval_summary: string | null;
-  rpe: number | null;
+  rpe?: number | null;
   notes: string | null;
 };
 

@@ -153,7 +153,6 @@ async function collectWorkoutLogs() {
       title: scheduledWorkout?.title ?? 'Session',
       status: scheduledWorkout?.status ?? 'logged',
       duration_minutes: session.duration_minutes,
-      overall_rpe: session.overall_rpe,
       exercise_count: sessionExerciseLogs.length,
       set_count: sessionSetCount,
       notes: session.notes
@@ -208,7 +207,6 @@ async function collectRunTests() {
     pace_seconds_per_km: run.pace_seconds_per_km,
     target_pace_seconds_per_km: run.target_pace_seconds_per_km,
     treadmill_speed_kmh: run.treadmill_speed_kmh,
-    rpe: run.rpe,
     notes: run.notes
   }));
 }
@@ -262,4 +260,3 @@ function downloadFile(filename: string, content: string, mimeType: string) {
   document.body.removeChild(anchor);
   URL.revokeObjectURL(url);
 }
-

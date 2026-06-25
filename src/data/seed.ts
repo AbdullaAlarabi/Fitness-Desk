@@ -34,10 +34,10 @@ export const supplements = [
 ];
 
 export const todayWorkout = [
-  { exercise: 'Machine Chest Press', sets: '3', reps: '8-10', rest: '90 sec', rpe: '7-8' },
-  { exercise: 'Cable Lateral Raise', sets: '3', reps: '12-15', rest: '60 sec', rpe: '8' },
-  { exercise: 'Incline Machine Press', sets: '3', reps: '10-12', rest: '75 sec', rpe: '7-8' },
-  { exercise: 'Rope Triceps Pushdown', sets: '3', reps: '10-12', rest: '60 sec', rpe: '8' }
+  { exercise: 'Machine Chest Press', sets: '3', reps: '8-10', rest: '90 sec' },
+  { exercise: 'Cable Lateral Raise', sets: '3', reps: '12-15', rest: '60 sec' },
+  { exercise: 'Incline Machine Press', sets: '3', reps: '10-12', rest: '75 sec' },
+  { exercise: 'Rope Triceps Pushdown', sets: '3', reps: '10-12', rest: '60 sec' }
 ];
 
 export const runProgress = [

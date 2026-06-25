@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { ArrowRight, CheckCircle2, Circle, Dumbbell, Loader2, Moon, Play, Sun } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Circle, Dumbbell, Loader2, Moon, Play, Sun, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, MetricCard, SectionCard, StateCard } from '../components/ui';
 import { getWorkoutHeroCopy } from '../data/workout-plan';
@@ -323,17 +323,53 @@ function IntakeRow({
   ) => void;
 }) {
   const status = item.todayLog?.status ?? 'pending';
+  const isTaken = status === 'taken';
+  const isSkipped = status === 'skipped';
+
+  async function toggleStatusIcon() {
+    if (status === 'taken') {
+      onAction(item.id, { status: 'skipped' });
+      return;
+    }
+
+    onAction(item.id, { status: 'taken' });
+  }
 
   return (
     <div className="flex flex-col gap-3 rounded-3xl border border-line bg-[rgba(255,255,255,0.28)] p-4 shadow-float sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex-1">
-        <div className="flex items-start gap-3">
-          <div>
-            <p className="font-semibold text-teal">{item.name}</p>
-            <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-muted">
-              {status === 'taken' ? 'Saved as taken' : status === 'skipped' ? 'Saved as skipped' : 'Not saved yet'}
-            </p>
-          </div>
+      <div className="flex flex-1 items-center gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void toggleStatusIcon()}
+          aria-label={
+            status === 'taken'
+              ? `Change ${item.name} to skipped`
+              : status === 'skipped'
+                ? `Change ${item.name} to taken`
+                : `Mark ${item.name} as taken`
+          }
+          className={[
+            'flex h-11 w-11 items-center justify-center rounded-2xl border transition',
+            isTaken
+              ? 'border-teal bg-teal text-white'
+              : isSkipped
+                ? 'border-line bg-gold text-teal'
+                : 'border-line bg-field text-muted'
+          ].join(' ')}
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : isTaken ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : isSkipped ? (
+            <XCircle className="h-5 w-5" />
+          ) : (
+            <Circle className="h-5 w-5" />
+          )}
+        </button>
+        <div>
+          <p className="font-semibold text-teal">{item.name}</p>
         </div>
       </div>
       <div className="flex gap-2">
@@ -341,23 +377,23 @@ function IntakeRow({
           type="button"
           disabled={busy}
           onClick={() => onAction(item.id, { status: 'taken' })}
-            className={[
-              'min-h-11 rounded-2xl px-4 text-sm font-semibold',
+          className={[
+            'min-h-11 rounded-2xl px-4 text-sm font-semibold transition',
             status === 'taken' ? 'bg-teal text-white' : 'border border-line bg-field text-teal'
           ].join(' ')}
         >
-          {busy && status !== 'skipped' ? 'Saving...' : 'Taken'}
+          Taken
         </button>
         <button
           type="button"
           disabled={busy}
           onClick={() => onAction(item.id, { status: 'skipped' })}
-            className={[
-              'min-h-11 rounded-2xl px-4 text-sm font-semibold',
+          className={[
+            'min-h-11 rounded-2xl px-4 text-sm font-semibold transition',
             status === 'skipped' ? 'bg-gold text-teal' : 'border border-line bg-field text-muted'
           ].join(' ')}
         >
-          {busy && status === 'skipped' ? 'Saving...' : 'Skipped'}
+          Skipped
         </button>
       </div>
     </div>

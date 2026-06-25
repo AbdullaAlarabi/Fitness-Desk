@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { Activity, CalendarDays, Dumbbell, LineChart, Scale } from 'lucide-react';
+import { assetUrl } from '../lib/assets';
 import { subscribeDashboardRefresh } from '../lib/dashboardEvents';
 import { getDashboardCommandSummary, type DashboardCommandSummary } from '../services/dashboardCommandService';
 
@@ -50,7 +51,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className={isTodayPage ? '' : 'space-y-2'}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/54">Fitness Desk</p>
+                <img
+                  src={assetUrl('media/brand/fitness_desk_logo_horizontal.png')}
+                  alt="Fitness Desk logo"
+                  className="h-7 w-auto object-contain"
+                />
                 <h1 className={`${isTodayPage ? 'text-xl' : 'text-base'} mt-2 font-semibold tracking-[-0.04em] text-white`}>
                   {isTodayPage ? 'Private performance desk' : 'Performance view'}
                 </h1>

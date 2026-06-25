@@ -77,7 +77,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/incline-chest-press-thumb',
         mediaFullUrl: 'coach-media/incline-chest-press-full',
         mediaType: 'image',
-        mediaAlt: 'Incline chest press machine demo placeholder'
+        mediaAlt: 'Incline chest press machine demo'
       },
       {
         id: 'day1-seated-chest-press-machine',
@@ -96,7 +96,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/seated-chest-press-thumb',
         mediaFullUrl: 'coach-media/seated-chest-press-full',
         mediaType: 'image',
-        mediaAlt: 'Seated chest press machine demo placeholder'
+        mediaAlt: 'Seated chest press machine demo'
       },
       {
         id: 'day1-pec-deck-or-cable-fly',
@@ -115,7 +115,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/pec-deck-fly-thumb',
         mediaFullUrl: 'coach-media/pec-deck-fly-full',
         mediaType: 'image',
-        mediaAlt: 'Pec deck or cable fly demo placeholder'
+        mediaAlt: 'Pec deck or cable fly demo'
       },
       {
         id: 'day1-shoulder-press-machine',
@@ -134,7 +134,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/shoulder-press-thumb',
         mediaFullUrl: 'coach-media/shoulder-press-full',
         mediaType: 'image',
-        mediaAlt: 'Shoulder press machine demo placeholder'
+        mediaAlt: 'Shoulder press machine demo'
       },
       {
         id: 'day1-lateral-raise',
@@ -153,7 +153,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/lateral-raise-thumb',
         mediaFullUrl: 'coach-media/lateral-raise-full',
         mediaType: 'image',
-        mediaAlt: 'Lateral raise demo placeholder'
+        mediaAlt: 'Lateral raise demo'
       },
       {
         id: 'day1-rope-triceps-pushdown',
@@ -172,7 +172,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/triceps-pushdown-thumb',
         mediaFullUrl: 'coach-media/triceps-pushdown-full',
         mediaType: 'image',
-        mediaAlt: 'Rope triceps pushdown demo placeholder'
+        mediaAlt: 'Rope triceps pushdown demo'
       }
     ]
   },
@@ -203,7 +203,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/lat-pulldown-thumb',
         mediaFullUrl: 'coach-media/lat-pulldown-full',
         mediaType: 'image',
-        mediaAlt: 'Lat pulldown demo placeholder'
+        mediaAlt: 'Lat pulldown demo'
       },
       {
         id: 'day2-chest-supported-row',
@@ -222,7 +222,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/chest-supported-row-thumb',
         mediaFullUrl: 'coach-media/chest-supported-row-full',
         mediaType: 'image',
-        mediaAlt: 'Chest-supported row machine demo placeholder'
+        mediaAlt: 'Chest-supported row machine demo'
       },
       {
         id: 'day2-seated-cable-row',
@@ -241,7 +241,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/seated-cable-row-thumb',
         mediaFullUrl: 'coach-media/seated-cable-row-full',
         mediaType: 'image',
-        mediaAlt: 'Seated cable row demo placeholder'
+        mediaAlt: 'Seated cable row demo'
       },
       {
         id: 'day2-straight-arm-pulldown',
@@ -260,7 +260,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/straight-arm-pulldown-thumb',
         mediaFullUrl: 'coach-media/straight-arm-pulldown-full',
         mediaType: 'image',
-        mediaAlt: 'Straight-arm cable pulldown demo placeholder'
+        mediaAlt: 'Straight-arm cable pulldown demo'
       },
       {
         id: 'day2-reverse-pec-deck',
@@ -279,7 +279,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/reverse-pec-deck-thumb',
         mediaFullUrl: 'coach-media/reverse-pec-deck-full',
         mediaType: 'image',
-        mediaAlt: 'Reverse pec deck demo placeholder'
+        mediaAlt: 'Reverse pec deck demo'
       },
       {
         id: 'day2-cable-curl',
@@ -298,7 +298,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/cable-curl-thumb',
         mediaFullUrl: 'coach-media/cable-curl-full',
         mediaType: 'image',
-        mediaAlt: 'Cable curl demo placeholder'
+        mediaAlt: 'Cable curl demo'
       },
       {
         id: 'day2-face-pull',
@@ -317,7 +317,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/face-pull-thumb',
         mediaFullUrl: 'coach-media/face-pull-full',
         mediaType: 'image',
-        mediaAlt: 'Face pull demo placeholder'
+        mediaAlt: 'Face pull demo'
       }
     ]
   },
@@ -348,7 +348,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/leg-press-thumb',
         mediaFullUrl: 'coach-media/leg-press-full',
         mediaType: 'image',
-        mediaAlt: 'Leg press demo placeholder'
+        mediaAlt: 'Leg press demo'
       },
       {
         id: 'day3-seated-leg-curl',
@@ -367,7 +367,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/seated-leg-curl-thumb',
         mediaFullUrl: 'coach-media/seated-leg-curl-full',
         mediaType: 'image',
-        mediaAlt: 'Seated leg curl demo placeholder'
+        mediaAlt: 'Seated leg curl demo'
       },
       {
         id: 'day3-leg-extension',
@@ -386,7 +386,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/leg-extension-thumb',
         mediaFullUrl: 'coach-media/leg-extension-full',
         mediaType: 'image',
-        mediaAlt: 'Leg extension demo placeholder'
+        mediaAlt: 'Leg extension demo'
       },
       {
         id: 'day3-standing-calf-raise',
@@ -405,7 +405,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/calf-raise-thumb',
         mediaFullUrl: 'coach-media/calf-raise-full',
         mediaType: 'image',
-        mediaAlt: 'Standing calf raise demo placeholder'
+        mediaAlt: 'Standing calf raise demo'
       },
       {
         id: 'day3-cable-crunch',
@@ -424,7 +424,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/cable-crunch-thumb',
         mediaFullUrl: 'coach-media/cable-crunch-full',
         mediaType: 'image',
-        mediaAlt: 'Cable crunch demo placeholder'
+        mediaAlt: 'Cable crunch demo'
       },
       {
         id: 'day3-plank',
@@ -443,7 +443,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/plank-thumb',
         mediaFullUrl: 'coach-media/plank-full',
         mediaType: 'image',
-        mediaAlt: 'Plank demo placeholder'
+        mediaAlt: 'Plank demo'
       }
     ]
   },
@@ -485,7 +485,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/incline-machine-press-thumb',
         mediaFullUrl: 'coach-media/incline-machine-press-full',
         mediaType: 'image',
-        mediaAlt: 'Incline machine press demo placeholder'
+        mediaAlt: 'Incline machine press demo'
       },
       {
         id: 'day5-neutral-pulldown',
@@ -504,7 +504,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/neutral-pulldown-thumb',
         mediaFullUrl: 'coach-media/neutral-pulldown-full',
         mediaType: 'image',
-        mediaAlt: 'Neutral-grip lat pulldown demo placeholder'
+        mediaAlt: 'Neutral-grip lat pulldown demo'
       },
       {
         id: 'day5-lateral-raise-machine',
@@ -523,7 +523,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/lateral-raise-machine-thumb',
         mediaFullUrl: 'coach-media/lateral-raise-machine-full',
         mediaType: 'image',
-        mediaAlt: 'Lateral raise machine demo placeholder'
+        mediaAlt: 'Lateral raise machine demo'
       },
       {
         id: 'day5-pec-deck',
@@ -542,7 +542,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/pec-deck-day5-thumb',
         mediaFullUrl: 'coach-media/pec-deck-day5-full',
         mediaType: 'image',
-        mediaAlt: 'Pec deck demo placeholder'
+        mediaAlt: 'Pec deck demo'
       },
       {
         id: 'day5-seated-row-machine',
@@ -561,7 +561,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/chest-supported-row-day5-thumb',
         mediaFullUrl: 'coach-media/chest-supported-row-day5-full',
         mediaType: 'image',
-        mediaAlt: 'Chest-supported row demo placeholder'
+        mediaAlt: 'Chest-supported row demo'
       },
       {
         id: 'day5-reverse-pec-deck',
@@ -580,7 +580,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/reverse-pec-deck-day5-thumb',
         mediaFullUrl: 'coach-media/reverse-pec-deck-day5-full',
         mediaType: 'image',
-        mediaAlt: 'Reverse pec deck or face pull demo placeholder'
+        mediaAlt: 'Reverse pec deck or face pull demo'
       },
       {
         id: 'day5-rope-triceps-pushdown',
@@ -599,7 +599,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day5-triceps-pushdown-thumb',
         mediaFullUrl: 'coach-media/day5-triceps-pushdown-full',
         mediaType: 'image',
-        mediaAlt: 'Optional rope triceps pushdown demo placeholder'
+        mediaAlt: 'Optional rope triceps pushdown demo'
       },
       {
         id: 'day5-cable-curl',
@@ -618,7 +618,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day5-cable-curl-thumb',
         mediaFullUrl: 'coach-media/day5-cable-curl-full',
         mediaType: 'image',
-        mediaAlt: 'Optional cable curl demo placeholder'
+        mediaAlt: 'Optional cable curl demo'
       }
     ]
   },
@@ -649,7 +649,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day6-triceps-pushdown-thumb',
         mediaFullUrl: 'coach-media/day6-triceps-pushdown-full',
         mediaType: 'image',
-        mediaAlt: 'Rope triceps pushdown demo placeholder'
+        mediaAlt: 'Rope triceps pushdown demo'
       },
       {
         id: 'day6-machine-preacher-curl',
@@ -668,7 +668,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day6-preacher-curl-thumb',
         mediaFullUrl: 'coach-media/day6-preacher-curl-full',
         mediaType: 'image',
-        mediaAlt: 'Machine preacher curl demo placeholder'
+        mediaAlt: 'Machine preacher curl demo'
       },
       {
         id: 'day6-overhead-triceps-extension',
@@ -687,7 +687,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day6-overhead-extension-thumb',
         mediaFullUrl: 'coach-media/day6-overhead-extension-full',
         mediaType: 'image',
-        mediaAlt: 'Overhead cable triceps extension demo placeholder'
+        mediaAlt: 'Overhead cable triceps extension demo'
       },
       {
         id: 'day6-cable-hammer-curl',
@@ -706,7 +706,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day6-hammer-curl-thumb',
         mediaFullUrl: 'coach-media/day6-hammer-curl-full',
         mediaType: 'image',
-        mediaAlt: 'Cable hammer curl demo placeholder'
+        mediaAlt: 'Cable hammer curl demo'
       },
       {
         id: 'day6-captain-chair-knee-raise',
@@ -725,7 +725,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day6-knee-raise-thumb',
         mediaFullUrl: 'coach-media/day6-knee-raise-full',
         mediaType: 'image',
-        mediaAlt: 'Captain chair knee raise demo placeholder'
+        mediaAlt: 'Captain chair knee raise demo'
       },
       {
         id: 'day6-pallof-press',
@@ -744,7 +744,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/day6-pallof-thumb',
         mediaFullUrl: 'coach-media/day6-pallof-full',
         mediaType: 'image',
-        mediaAlt: 'Pallof press or plank demo placeholder'
+        mediaAlt: 'Pallof press or plank demo'
       }
     ]
   },

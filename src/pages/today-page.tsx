@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { ArrowRight, CheckCircle2, Circle, Dumbbell, Loader2, Moon, Play, Sun, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, MetricCard, SectionCard, StateCard } from '../components/ui';
+import { getDayMedia } from '../data/dayMedia';
 import { getWorkoutHeroCopy } from '../data/workout-plan';
 import { getDashboardCommandSummary, type DashboardCommandSummary } from '../services/dashboardCommandService';
 import {
@@ -94,14 +95,19 @@ export function TodayPage() {
   const intakeSkipped = intakeItems.filter((item) => item.todayLog?.status === 'skipped').length;
   const intakeFullyDecided = intakeTarget > 0 && intakeItems.every((item) => item.todayLog?.status === 'taken' || item.todayLog?.status === 'skipped');
   const todayWorkoutTitle = snapshot?.workout.cycleDay.title ?? 'Training day';
-  const todayWorkoutDetail = `Focus: ${snapshot?.workout.cycleDay.focus ?? 'Training focus loaded from the weekly split.'}`;
   const heroContent = snapshot?.workout.cycleDay ? getWorkoutHeroCopy(snapshot.workout.cycleDay) : getTodayHeroContent(null);
+  const todayDayMedia = getDayMedia(snapshot?.workout.cycleDay.dayNumber ?? 1);
 
   return (
     <div className="space-y-6">
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="fd-panel-dark relative overflow-hidden p-6 sm:p-8">
           <div className="absolute -right-20 top-0 h-40 w-40 rounded-full bg-gold/12 blur-3xl" />
+          <img
+            src={todayDayMedia.imageUrl}
+            alt={todayDayMedia.alt}
+            className="absolute inset-y-0 right-0 hidden h-full w-48 object-cover opacity-20 md:block"
+          />
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/58">
             {format(new Date(), 'EEEE, MMMM d')}
           </p>
@@ -193,6 +199,11 @@ export function TodayPage() {
                 </p>
               </div>
             </div>
+            <img
+              src={todayDayMedia.imageUrl}
+              alt={todayDayMedia.alt}
+              className="mt-4 h-24 w-full rounded-2xl object-cover"
+            />
           </Card>
         </SectionCard>
 

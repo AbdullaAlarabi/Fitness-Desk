@@ -22,6 +22,8 @@ import {
   saveRunningSession,
   type RunningSessionType
 } from '../services/runningServices';
+import { getDayMedia } from '../data/dayMedia';
+import { assetUrl } from '../lib/assets';
 import {
   completeWorkoutSession,
   ensureWorkoutSession,
@@ -90,6 +92,7 @@ export function WorkoutPage() {
     () => snapshot?.exercises.slice(0, 5).map((exercise) => exercise.exerciseName) ?? [],
     [snapshot?.exercises]
   );
+  const dayMedia = getDayMedia(snapshot?.planConfig?.dayNumber ?? 1);
 
   async function loadSnapshot() {
     setLoading(true);
@@ -387,6 +390,11 @@ export function WorkoutPage() {
                 {snapshot.exercises.length} exercises · {snapshot.planConfig?.estimatedDurationMinutes ?? 60} min
               </p>
             </div>
+            <img
+              src={dayMedia.imageUrl}
+              alt={dayMedia.alt}
+              className="h-24 w-full rounded-2xl object-cover"
+            />
             <button
               type="button"
               onClick={() => void startWorkout()}
@@ -654,11 +662,19 @@ export function WorkoutPage() {
                   className="w-full rounded-2xl border border-line bg-card px-4 py-4 text-left"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-teal">{index + 1}. {exercise.exerciseName}</p>
-                      <p className="mt-1 text-sm text-muted">
-                        {loggedSets}/{exercise.setCount} sets done
-                      </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <img
+                        src={exercise.mediaThumbnailUrl ?? assetUrl('assets/exercises/demo-placeholder.svg')}
+                        alt={exercise.mediaAlt}
+                        loading="lazy"
+                        className="h-12 w-12 rounded-xl object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-teal">{index + 1}. {exercise.exerciseName}</p>
+                        <p className="mt-1 text-sm text-muted">
+                          {loggedSets}/{exercise.setCount} sets done
+                        </p>
+                      </div>
                     </div>
                     <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold capitalize text-teal">
                       {status}
@@ -685,15 +701,11 @@ export function WorkoutPage() {
       {showDemo && currentExercise ? (
         <BottomSheet title="Demo" onClose={() => setShowDemo(false)}>
           <div className="space-y-4">
-            <div className="overflow-hidden rounded-[24px] border border-line bg-teal">
-              <div className="flex h-56 w-full flex-col items-center justify-center gap-3 bg-teal px-6 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold text-teal">
-                  <Play className="h-5 w-5" />
-                </div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold">Demo media placeholder</p>
-                <p className="max-w-xs text-sm text-white/70">Licensed image or GIF can be added here later.</p>
-              </div>
-            </div>
+            <img
+              src={currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? assetUrl('assets/exercises/demo-placeholder.svg')}
+              alt={currentExercise.mediaAlt}
+              className="w-full rounded-[24px] border border-line object-cover"
+            />
             <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
             <CoachRow label="Main cue" value={currentExercise.mainCue} />
           </div>

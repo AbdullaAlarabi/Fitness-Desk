@@ -4,6 +4,7 @@ import { ArrowRightLeft, CalendarDays, Check, Play, RotateCcw, Shuffle, SkipForw
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { SectionCard, Pill, StateCard } from '../components/ui';
+import { getDayMedia } from '../data/dayMedia';
 import {
   getPlanWeekSnapshot,
   markPlanDayStatus,
@@ -246,6 +247,8 @@ function PlanDayCard({
   onMove: () => void;
   onReset: () => void;
 }) {
+  const dayMedia = getDayMedia(day.cycleDay.dayNumber);
+
   return (
     <div className={['rounded-3xl border p-4 shadow-float', day.isRest ? 'border-line bg-card' : 'border-line bg-white'].join(' ')}>
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -259,6 +262,12 @@ function PlanDayCard({
           <p className="text-2xl font-semibold text-teal">{day.name}</p>
           <p className="text-sm leading-6 text-muted">{day.focus}</p>
           <p className="text-sm font-medium text-teal">Estimated duration: {day.durationMinutes} minutes</p>
+          <img
+            src={dayMedia.imageUrl}
+            alt={dayMedia.alt}
+            loading="lazy"
+            className="mt-3 h-20 w-full max-w-sm rounded-2xl object-cover"
+          />
         </div>
 
         <div className="flex flex-wrap gap-2 xl:max-w-sm xl:justify-end">

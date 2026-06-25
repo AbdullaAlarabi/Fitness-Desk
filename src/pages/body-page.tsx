@@ -37,6 +37,7 @@ export function BodyPage() {
   const [quickEnergy, setQuickEnergy] = useState('');
   const [quickSleep, setQuickSleep] = useState('');
   const [quickSoreness, setQuickSoreness] = useState('');
+  const [weeklyExpanded, setWeeklyExpanded] = useState(false);
   const [weeklyValues, setWeeklyValues] = useState({
     weight: '',
     bodyFat: '',
@@ -60,6 +61,7 @@ export function BodyPage() {
   }, [range]);
 
   const chartData = snapshot?.series[chartMetric] ?? [];
+  const hasChartData = chartTabs.some((tab) => (snapshot?.series[tab.key] ?? []).length > 0);
   const weeklyWeightNumber = Number(weeklyValues.weight);
   const weeklyBodyFatNumber = Number(weeklyValues.bodyFat);
   const derivedBmi =
@@ -129,7 +131,7 @@ export function BodyPage() {
     const muscle = Number(weeklyValues.muscle);
 
     if ([weight, bodyFat, bodyWater, muscle].some((value) => !Number.isFinite(value) || value <= 0)) {
-      setError('Enter valid values for weight, body fat, body water, and muscle.');
+      setError('Weekly full check-in requires weight, body fat %, body water %, and muscle kg. For weight-only tracking, use Daily Quick Check-in.');
       return;
     }
 
@@ -235,7 +237,25 @@ export function BodyPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Weekly full check-in" eyebrow="Core scale metrics">
+        <SectionCard
+          title="Weekly full check-in"
+          eyebrow="Core scale metrics"
+          action={
+            <button
+              type="button"
+              onClick={() => setWeeklyExpanded((current) => !current)}
+              className="fd-button-secondary min-h-11 px-4"
+            >
+              {weeklyExpanded ? 'Hide weekly scan' : 'Open weekly scan'}
+            </button>
+          }
+        >
+          {!weeklyExpanded ? (
+            <StateCard
+              title="Weekly scan collapsed"
+              message="Open this when you want to log body fat %, body water %, muscle kg, and the extra scale metrics."
+            />
+          ) : (
           <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <InputBlock label="Weight kg">
@@ -408,6 +428,7 @@ export function BodyPage() {
               {savingWeekly ? 'Saving...' : 'Save weekly full check-in'}
             </button>
           </div>
+          )}
         </SectionCard>
       </section>
 
@@ -451,6 +472,7 @@ export function BodyPage() {
         </SectionCard>
       </section>
 
+      {hasChartData ? (
       <SectionCard title="Metric charts" eyebrow="Real Supabase data">
         <div className="mb-5 flex flex-wrap gap-2">
           {chartTabs.map((tab) => (
@@ -500,6 +522,7 @@ export function BodyPage() {
           )}
         </div>
       </SectionCard>
+      ) : null}
 
       <SectionCard title="Consistency reminder" eyebrow="Best comparison">
         <p className="text-sm leading-6 text-muted">

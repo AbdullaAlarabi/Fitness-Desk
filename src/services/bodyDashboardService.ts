@@ -38,6 +38,8 @@ export type BodyStatusLabel = {
 };
 
 export type BodyDailySnapshot = {
+  checkinId: string;
+  checkinDate: string;
   weight: number | null;
   energyLevel: number | null;
   sleepHours: number | null;
@@ -108,6 +110,11 @@ export async function getBodyDashboardSnapshot(range: BodyRangeFilter): Promise<
     statusLabels,
     latestDaily
   };
+}
+
+export async function getLatestDailyCheckinSnapshot(): Promise<BodyDailySnapshot | null> {
+  const snapshot = await getBodyDashboardSnapshot('All');
+  return snapshot.latestDaily;
 }
 
 export async function saveDailyQuickCheckin(input: {
@@ -381,6 +388,8 @@ function buildLatestDailySnapshot(
   if (!latestDaily) return null;
 
   return {
+    checkinId: latestDaily.id,
+    checkinDate: latestDaily.checkin_date,
     weight: getNumericValueForCheckin(definitions, values, latestDaily.id, 'weight'),
     energyLevel: getNumericValueForCheckin(definitions, values, latestDaily.id, 'energy_level'),
     sleepHours: getNumericValueForCheckin(definitions, values, latestDaily.id, 'sleep_hours'),

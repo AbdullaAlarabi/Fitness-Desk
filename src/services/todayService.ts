@@ -4,6 +4,7 @@ import type { WorkoutPlanDayConfig } from '../data/workout-plan';
 import { emitDashboardRefresh } from '../lib/dashboardEvents';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
+import { getLatestDailyCheckinSnapshot } from './bodyDashboardService';
 import { resolveNextTrainingDay, resolveTrainingDayForDate } from './trainingCycle';
 import { buildMissingMigrationError, isMissingColumnError } from './shared';
 import type {
@@ -40,6 +41,8 @@ export type TodayBodyState = {
   checkin: BodyCheckinRow | null;
   weightDefinition: BodyMetricDefinitionRow | null;
   weightValue: BodyMetricValueRow | null;
+  latestDailyWeight: number | null;
+  latestDailyCheckinDate: string | null;
 };
 
 export type TodaySnapshot = {
@@ -56,7 +59,7 @@ export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot>
   const todayIso = format(now, 'yyyy-MM-dd');
   const client = getSupabaseClient();
 
-  const [intakeItemsResult, intakeLogsResult, todayScheduledResult, upcomingScheduledResult, templateResult, sessionResult, checkinResult, metricDefResult] =
+  const [intakeItemsResult, intakeLogsResult, todayScheduledResult, upcomingScheduledResult, templateResult, sessionResult, checkinResult, metricDefResult, latestDaily] =
     await Promise.all([
       client.from('intake_items').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position'),
       client.from('intake_logs').select('*').eq('workspace_id', WORKSPACE_ID).gte('logged_at', `${todayIso}T00:00:00`).lt('logged_at', `${todayIso}T23:59:59.999`),
@@ -65,7 +68,8 @@ export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot>
       client.from('workout_templates').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position'),
       client.from('workout_sessions').select('*').eq('workspace_id', WORKSPACE_ID).eq('session_date', todayIso).order('created_at'),
       client.from('body_checkins').select('*').eq('workspace_id', WORKSPACE_ID).eq('checkin_date', todayIso).eq('checkin_type', 'daily').order('created_at'),
-      client.from('body_metric_definitions').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position')
+      client.from('body_metric_definitions').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position'),
+      getLatestDailyCheckinSnapshot()
     ]);
 
   const firstError =
@@ -151,7 +155,9 @@ export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot>
     body: {
       checkin: dailyCheckin,
       weightDefinition,
-      weightValue
+      weightValue,
+      latestDailyWeight: latestDaily?.weight ?? null,
+      latestDailyCheckinDate: latestDaily?.checkinDate ?? null
     },
     completionScore
   };

@@ -54,6 +54,9 @@ export function ProgressPage() {
       })) ?? [];
 
   const bodyChartData = summary?.bodySnapshot.series[bodyTab] ?? [];
+  const hasWeeklyBarData = (summary?.weeklyBars.length ?? 0) > 0;
+  const hasBodyChartData = bodyChartData.length > 1;
+  const hasRunChartData = runChartData.length > 1;
 
   return (
     <div className="space-y-6">
@@ -82,35 +85,37 @@ export function ProgressPage() {
         </SectionCard>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <SectionCard title="Workout completion this week" eyebrow="Weekly bar chart">
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary?.weeklyBars ?? []} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
-                <XAxis dataKey="week" stroke="#96998C" />
-                <YAxis stroke="#96998C" domain={[0, 100]} />
-                <Tooltip />
-                <Bar dataKey="workouts" fill="#061414" radius={[10, 10, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </SectionCard>
+      {hasWeeklyBarData ? (
+        <section className="grid gap-6 xl:grid-cols-2">
+          <SectionCard title="Workout completion this week" eyebrow="Weekly bar chart">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={summary?.weeklyBars ?? []} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+                  <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
+                  <XAxis dataKey="week" stroke="#96998C" />
+                  <YAxis stroke="#96998C" domain={[0, 100]} />
+                  <Tooltip />
+                  <Bar dataKey="workouts" fill="#061414" radius={[10, 10, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </SectionCard>
 
-        <SectionCard title="Intake adherence" eyebrow="Weekly bar chart">
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary?.weeklyBars ?? []} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
-                <XAxis dataKey="week" stroke="#96998C" />
-                <YAxis stroke="#96998C" domain={[0, 100]} />
-                <Tooltip />
-                <Bar dataKey="intake" fill="#BCFF00" radius={[10, 10, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </SectionCard>
-      </section>
+          <SectionCard title="Intake adherence" eyebrow="Weekly bar chart">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={summary?.weeklyBars ?? []} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+                  <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
+                  <XAxis dataKey="week" stroke="#96998C" />
+                  <YAxis stroke="#96998C" domain={[0, 100]} />
+                  <Tooltip />
+                  <Bar dataKey="intake" fill="#BCFF00" radius={[10, 10, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </SectionCard>
+        </section>
+      ) : null}
 
       <SectionCard title="Body trends" eyebrow="Metric lines">
         <div className="mb-5 flex flex-wrap gap-2">
@@ -130,7 +135,7 @@ export function ProgressPage() {
         </div>
 
         <div className="h-80">
-          {bodyChartData.length > 0 ? (
+          {hasBodyChartData ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={bodyChartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
@@ -141,7 +146,7 @@ export function ProgressPage() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <StateCard title="No body trend" message="Save check-ins to populate this chart." />
+            <StateCard title="Not enough body data" message="Trend charts appear after more check-ins are saved." />
           )}
         </div>
       </SectionCard>
@@ -185,7 +190,7 @@ export function ProgressPage() {
             />
           </div>
           <div className="mt-5 h-72">
-            {runChartData.length > 0 ? (
+            {hasRunChartData ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={runChartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
@@ -196,7 +201,7 @@ export function ProgressPage() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <StateCard title="No 3.2 km runs" message="Log a 3.2 km run to start the trend." />
+              <StateCard title="Not enough run data" message="Log more than one 3.2 km run to unlock the trend chart." />
             )}
           </div>
         </SectionCard>

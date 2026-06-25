@@ -59,6 +59,15 @@ export type ProgressionRecommendation = {
   message: string;
 };
 
+const restDayRules = [
+  'Walk 30-45 minutes.',
+  'Keep the pace easy.',
+  'No hard running today.',
+  'No leg workout today.',
+  'Hydrate.',
+  'Mark complete after walking.'
+] as const;
+
 export async function getWorkoutModeSnapshot(dateIso = format(new Date(), 'yyyy-MM-dd')): Promise<WorkoutModeSnapshot> {
   const client = getSupabaseClient();
   const [scheduledResult, templateResult, sessionsResult] = await Promise.all([
@@ -189,7 +198,7 @@ export async function getWorkoutModeSnapshot(dateIso = format(new Date(), 'yyyy-
     session,
     sessionType,
     planConfig,
-    workoutRules,
+    workoutRules: sessionType === 'rest' ? restDayRules : workoutRules,
     exercises
   };
 }

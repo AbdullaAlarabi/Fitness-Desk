@@ -51,6 +51,7 @@ export function WorkoutPage() {
   const [runSaving, setRunSaving] = useState(false);
   const [expandedExerciseKey, setExpandedExerciseKey] = useState<string | null>(null);
   const [setCompletedChecked, setSetCompletedChecked] = useState(true);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     void loadSnapshot();
@@ -329,13 +330,30 @@ export function WorkoutPage() {
       </SectionCard>
 
       {snapshot?.workoutRules?.length ? (
-        <SectionCard title="Session rules" eyebrow="Coach rules">
-          <div className="grid gap-3 lg:grid-cols-2">
-            {snapshot.workoutRules.map((rule) => (
-              <div key={rule} className="rounded-2xl border border-line bg-card px-4 py-3 text-sm leading-6 text-teal">
-                {rule}
+        <SectionCard title="Session rules" eyebrow="Keep it simple">
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal">
+              {snapshot.sessionType === 'rest'
+                ? 'Walk 30-45 min · easy pace · no hard run.'
+                : 'Clean reps · 1-2 reps in reserve · follow rest timer'}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowRules((current) => !current)}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-teal"
+            >
+              {showRules ? 'Hide rules' : 'View rules'}
+              <ChevronDown className={`h-4 w-4 transition ${showRules ? 'rotate-180' : ''}`} />
+            </button>
+            {showRules ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {snapshot.workoutRules.map((rule) => (
+                  <div key={rule} className="rounded-2xl border border-line bg-card px-4 py-3 text-sm leading-6 text-teal">
+                    {rule}
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : null}
           </div>
         </SectionCard>
       ) : null}
@@ -362,14 +380,16 @@ export function WorkoutPage() {
 
       {snapshot && snapshot.sessionType !== 'rest' && snapshot.exercises.length > 0 ? (
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <SectionCard title="Active exercise card" eyebrow={`Exercise ${exerciseIndex + 1} of ${Math.max(snapshot.exercises.length, 1)}`}>
+          <SectionCard title="Active exercise" eyebrow={`Exercise ${exerciseIndex + 1} of ${Math.max(snapshot.exercises.length, 1)}`}>
             {currentExercise ? (
               <div className="space-y-5">
                 <Card>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
-                      <p className="mt-2 text-sm leading-6 text-muted">{cleanExerciseNote(currentExercise.notes) ?? 'Exercise details will be added here.'}</p>
+                      <p className="mt-2 text-sm text-muted">
+                        {currentExercise.setCount} x {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
+                      </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <MetricCard label="Target sets" value={String(currentExercise.setCount)} />
@@ -379,31 +399,13 @@ export function WorkoutPage() {
                       />
                     </div>
                   </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <CoachDetail label="Target muscles" value={currentExercise.targetMuscles} />
-                    <CoachDetail label="Setup" value={currentExercise.machineSetup} />
-                    <CoachDetail label="Main cue" value={currentExercise.mainCue} />
-                    <CoachDetail label="Common mistake" value={currentExercise.commonMistake} />
-                  </div>
-                  <ExerciseMediaPanel
-                    exercise={currentExercise}
-                    expanded={expandedExerciseKey === currentExercise.key}
-                    onToggle={() =>
-                      setExpandedExerciseKey((current) => (current === currentExercise.key ? null : currentExercise.key))
-                    }
-                  />
-                  {currentExercise.alternatives.length > 0 ? (
-                    <div className="mt-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Alternatives</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {currentExercise.alternatives.map((alternative) => (
-                          <span key={alternative} className="rounded-full border border-line bg-field px-3 py-1.5 text-xs font-semibold text-teal">
-                            {alternative}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
+                  {renderCoachNotes({
+                    exercise: currentExercise,
+                    expanded: expandedExerciseKey === currentExercise.key,
+                    onToggle: () => setExpandedExerciseKey((current) => (current === currentExercise.key ? null : currentExercise.key)),
+                    notesInput,
+                    onNotesChange: setNotesInput
+                  })}
                 </Card>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -468,16 +470,6 @@ export function WorkoutPage() {
                     </div>
                   </InputBlock>
                 </div>
-
-                <InputBlock label="Notes">
-                  <textarea
-                    value={notesInput}
-                    onChange={(event) => setNotesInput(event.target.value)}
-                    rows={3}
-                    className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
-                  />
-                </InputBlock>
-
                 <div className="flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -535,7 +527,7 @@ export function WorkoutPage() {
             )}
           </SectionCard>
 
-          <SectionCard title="Full exercise list" eyebrow="Scheduled session plan">
+          <SectionCard title="Exercise list" eyebrow="Scheduled session plan">
             <div className="space-y-4">
               {!snapshot?.session ? (
                 <StateCard title="Logging unlocks after start" message="The full exercise list is ready. Start the session to save sets and notes." />
@@ -558,23 +550,11 @@ export function WorkoutPage() {
                       Log here
                     </button>
                   </div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <CoachDetail label="Machine setup cue" value={exercise.machineSetup} />
-                    <CoachDetail label="Main coaching cue" value={exercise.mainCue} />
-                    <CoachDetail label="Common mistake" value={exercise.commonMistake} />
-                    <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
-                  </div>
-                  <div className="mt-3 rounded-2xl border border-line bg-teal px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold text-teal">
-                        <Play className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Demo media placeholder</p>
-                        <p className="mt-1 text-sm text-white/72">Expandable licensed GIF or image slot.</p>
-                      </div>
-                    </div>
-                  </div>
+                  {renderCoachNotes({
+                    exercise,
+                    expanded: expandedExerciseKey === exercise.key,
+                    onToggle: () => setExpandedExerciseKey((current) => (current === exercise.key ? null : exercise.key))
+                  })}
                   {exercise.setLogs.length > 0 ? (
                     <div className="mt-3 space-y-2">
                       {exercise.setLogs.map((setLog) => (
@@ -654,7 +634,7 @@ export function WorkoutPage() {
             <p className="text-lg font-semibold text-teal">{snapshot.scheduledWorkout?.title ?? snapshot.template?.name ?? 'Session'}</p>
             <p className="text-sm leading-6 text-muted">
               {snapshot.sessionType === 'rest'
-                ? 'Recovery session.'
+                ? 'Walk 30-45 min · easy pace · no hard run.'
                 : snapshot.sessionType === 'run'
                   ? 'Log the run and save the result.'
                   : 'Save the session with notes.'}
@@ -808,13 +788,19 @@ export function WorkoutPage() {
                     <p className="mt-1 font-semibold text-teal">{exercise.restSeconds}s</p>
                   </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <CoachDetail label="Target muscle" value={exercise.targetMuscles} />
-                  <CoachDetail label="Setup cue" value={exercise.machineSetup} />
-                  <CoachDetail label="Main coaching cue" value={exercise.mainCue} />
-                  <CoachDetail label="Common mistake" value={exercise.commonMistake} />
+                <div className="rounded-2xl border border-line bg-field px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Target muscle</p>
+                  <p className="mt-2 text-sm text-teal">{exercise.targetMuscles ?? 'Training focus'}</p>
                 </div>
-                <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
+                <details className="rounded-2xl border border-line bg-card px-4 py-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-teal">Coach notes</summary>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <CoachDetail label="Setup cue" value={exercise.machineSetup} />
+                    <CoachDetail label="Main coaching cue" value={exercise.mainCue} />
+                    <CoachDetail label="Common mistake" value={exercise.commonMistake} />
+                    <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
+                  </div>
+                </details>
               </Card>
             ))}
           </div>
@@ -930,6 +916,84 @@ function ExerciseMediaPanel({
             <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
             <CoachDetail label="Rest time" value={`${exercise.restSeconds} seconds`} />
           </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CoachMediaPlaceholder() {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-line bg-teal">
+      <div className="flex h-48 w-full flex-col items-center justify-center gap-3 bg-teal px-6 text-center sm:h-56">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold text-teal">
+          <Play className="h-5 w-5" />
+        </div>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold">Demo media placeholder</p>
+        <p className="max-w-xs text-sm text-white/70">Ready for a licensed image or GIF later.</p>
+      </div>
+    </div>
+  );
+}
+
+function renderCoachNotes({
+  exercise,
+  expanded,
+  onToggle,
+  notesInput,
+  onNotesChange
+}: {
+  exercise: WorkoutExerciseStep;
+  expanded: boolean;
+  onToggle: () => void;
+  notesInput?: string;
+  onNotesChange?: (value: string) => void;
+}) {
+  const visibleNote = cleanExerciseNote(exercise.notes);
+  const hasCoachContent = Boolean(
+    exercise.targetMuscles ||
+      exercise.machineSetup ||
+      exercise.mainCue ||
+      exercise.commonMistake ||
+      exercise.alternatives.length ||
+      visibleNote ||
+      onNotesChange
+  );
+
+  if (!hasCoachContent) return null;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-line bg-card px-4 py-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="text-sm font-semibold text-teal">Coach notes</span>
+        <ChevronDown className={`h-4 w-4 text-teal transition ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+      {expanded ? (
+        <div className="mt-4 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CoachDetail label="Target muscles" value={exercise.targetMuscles} />
+            <CoachDetail label="Setup cue" value={exercise.machineSetup} />
+            <CoachDetail label="Main cue" value={exercise.mainCue} />
+            <CoachDetail label="Common mistake" value={exercise.commonMistake} />
+            <CoachDetail label="Alternative machine" value={exercise.alternatives[0] ?? null} />
+            {visibleNote ? <CoachDetail label="Exercise note" value={visibleNote} /> : null}
+          </div>
+          <CoachMediaPlaceholder />
+          {onNotesChange ? (
+            <InputBlock label="Notes">
+              <textarea
+                value={notesInput ?? ''}
+                onChange={(event) => onNotesChange(event.target.value)}
+                rows={3}
+                className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
+              />
+            </InputBlock>
+          ) : null}
         </div>
       ) : null}
     </div>

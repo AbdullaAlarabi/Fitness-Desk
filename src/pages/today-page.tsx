@@ -35,7 +35,7 @@ export function TodayPage() {
       const command = await getDashboardCommandSummary();
       setSnapshot(next);
       setCommandSummary(command);
-      setWeightInput(next.body.weightValue?.numeric_value?.toString() ?? '');
+      setWeightInput((next.body.latestDailyWeight ?? next.body.weightValue?.numeric_value ?? '').toString());
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load today.');
     } finally {
@@ -125,40 +125,29 @@ export function TodayPage() {
               {commandSummary?.nextAction ?? 'Start the session. Save the sets. Finish clean.'}
             </div>
           </div>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <HeroMetric label="Today’s workout" value={commandSummary?.todaysWorkout ?? todayWorkoutTitle} />
-            <HeroMetric label="Run goal" value="20:00 to 15:00" />
             <HeroMetric label="Completion score" value={`${score}%`} />
             <HeroMetric label="Workout status" value={commandSummary?.workoutStatus ?? 'Ready'} />
           </div>
         </div>
-
-        <SectionCard title="Today’s mission" eyebrow={snapshot?.greeting ?? 'Command'}>
-          <div className="grid gap-4">
-            <Card>
-              <p className="fd-label">Main command line</p>
-              <p className="mt-3 text-xl font-semibold leading-tight text-teal">
-                {commandSummary?.commandLine ?? 'Train clean. Track honestly. Adjust with data.'}
-              </p>
-            </Card>
-            <Card>
-              <div className="flex items-center gap-5">
-                <div className="flex h-28 w-28 items-center justify-center rounded-full border-[10px] border-gold bg-teal text-3xl font-semibold text-gold shadow-float">
-                  {loading ? '...' : `${score}%`}
-                </div>
-                <div className="space-y-3 text-sm text-muted">
-                  <p><span className="font-semibold text-teal">Workout</span> 50%</p>
-                  <p><span className="font-semibold text-teal">Intake</span> 30%</p>
-                  <p><span className="font-semibold text-teal">Check-in</span> 20%</p>
-                  <p className="pt-1 font-medium text-teal">You showed up today.</p>
-                </div>
-              </div>
-            </Card>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {(commandSummary?.quickStats ?? fallbackQuickStats).map((card) => (
-                <MetricCard key={card.label} label={card.label} value={card.value} note={card.hint} />
-              ))}
-            </div>
+        <SectionCard title="Complete the day" eyebrow={snapshot?.greeting ?? 'Command'}>
+          <div className="grid gap-3">
+            <ChecklistRow
+              label="Session"
+              value={snapshot?.workout.sessionCompleted ? 'Complete' : 'Ready'}
+              done={snapshot?.workout.sessionCompleted ?? false}
+            />
+            <ChecklistRow
+              label="Intake"
+              value={`${intakeTaken}/${intakeTarget || 0}`}
+              done={intakeFullyDecided}
+            />
+            <ChecklistRow
+              label="Weight"
+              value={snapshot?.body.latestDailyWeight ? `${snapshot.body.latestDailyWeight} kg` : 'Not logged yet'}
+              done={Boolean(snapshot?.body.latestDailyWeight)}
+            />
           </div>
         </SectionCard>
       </section>
@@ -166,16 +155,7 @@ export function TodayPage() {
       {error ? <ErrorBanner message={error} /> : null}
       {loading && !snapshot ? <StateCard title="Loading today" message="Fetching workout, intake, and check-in." /> : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <SectionCard title={commandSummary?.coachNoteTitle ?? 'Coach note'} eyebrow="Adaptive note">
-          <Card>
-            <p className="text-lg font-semibold text-teal">{commandSummary?.coachNoteTitle ?? 'Log your first check-in'}</p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {commandSummary?.coachNoteBody ?? 'Log your first check-in to activate coaching notes.'}
-            </p>
-          </Card>
-        </SectionCard>
-
+      <section className="grid gap-6 xl:grid-cols-2">
         <SectionCard
           title="Today’s Workout"
           eyebrow="Start session"
@@ -289,7 +269,11 @@ export function TodayPage() {
             <div className="rounded-2xl border border-line bg-field px-4 py-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Latest</p>
               <p className="mt-2 text-2xl font-semibold text-teal">
-                {snapshot?.body.weightValue?.numeric_value ? `${snapshot.body.weightValue.numeric_value} kg` : 'Not logged yet'}
+                {snapshot?.body.latestDailyWeight !== null && snapshot?.body.latestDailyWeight !== undefined
+                  ? `${snapshot.body.latestDailyWeight} kg`
+                  : snapshot?.body.weightValue?.numeric_value
+                    ? `${snapshot.body.weightValue.numeric_value} kg`
+                    : 'Not logged yet'}
               </p>
             </div>
           </Card>
@@ -304,6 +288,18 @@ function HeroMetric({ label, value }: { label: string; value: string }) {
     <div className="rounded-3xl border border-white/10 bg-white/6 px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/54">{label}</p>
       <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function ChecklistRow({ label, value, done }: { label: string; value: string; done: boolean }) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-line bg-white px-4 py-3">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</p>
+        <p className="mt-1 text-sm font-semibold text-teal">{value}</p>
+      </div>
+      {done ? <CheckCircle2 className="h-5 w-5 text-teal" /> : <Circle className="h-5 w-5 text-muted" />}
     </div>
   );
 }
@@ -327,86 +323,24 @@ function IntakeRow({
   ) => void;
 }) {
   const status = item.todayLog?.status ?? 'pending';
-  const [dose, setDose] = useState(item.todayLog?.amount?.toString() ?? '');
-  const [notes, setNotes] = useState(item.todayLog?.notes ?? '');
-  const [unit, setUnit] = useState(item.todayLog?.unit ?? item.default_unit ?? '');
-  const [timeTaken, setTimeTaken] = useState(
-    item.todayLog?.logged_at ? format(new Date(item.todayLog.logged_at), 'HH:mm') : ''
-  );
 
   return (
     <div className="flex flex-col gap-3 rounded-3xl border border-line bg-[rgba(255,255,255,0.28)] p-4 shadow-float sm:flex-row sm:items-center sm:justify-between">
       <div className="flex-1">
         <div className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            checked={status === 'taken'}
-            onChange={(event) => {
-              if (event.target.checked) {
-                onAction(item.id, {
-                  status: 'taken',
-                  amount: dose ? Number(dose) : null,
-                  unit: unit || null,
-                  notes: notes || null,
-                  timeTaken: timeTaken || null
-                });
-              }
-            }}
-            className="mt-1 h-5 w-5 accent-[#BCFF00]"
-          />
           <div>
             <p className="font-semibold text-teal">{item.name}</p>
-            <p className="mt-1 text-sm text-muted">{item.frequency ?? 'custom'}</p>
             <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-muted">
               {status === 'taken' ? 'Saved as taken' : status === 'skipped' ? 'Saved as skipped' : 'Not saved yet'}
             </p>
           </div>
-        </div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <input
-            type="number"
-            min="0"
-            step="0.1"
-            value={dose}
-            onChange={(event) => setDose(event.target.value)}
-            placeholder="Optional dose"
-            className="min-h-11 rounded-2xl border border-line bg-field px-4 text-sm text-teal outline-none"
-          />
-          <input
-            type="text"
-            value={unit}
-            onChange={(event) => setUnit(event.target.value)}
-            placeholder="Unit"
-            className="min-h-11 rounded-2xl border border-line bg-field px-4 text-sm text-teal outline-none"
-          />
-          <input
-            type="time"
-            value={timeTaken}
-            onChange={(event) => setTimeTaken(event.target.value)}
-            className="min-h-11 rounded-2xl border border-line bg-field px-4 text-sm text-teal outline-none"
-          />
-          <input
-            type="text"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder={status === 'skipped' ? 'Skip reason optional' : 'Notes optional'}
-            className="min-h-11 rounded-2xl border border-line bg-field px-4 text-sm text-teal outline-none"
-          />
         </div>
       </div>
       <div className="flex gap-2">
         <button
           type="button"
           disabled={busy}
-          onClick={() =>
-            onAction(item.id, {
-              status: 'taken',
-              amount: dose ? Number(dose) : null,
-              unit: unit || null,
-              notes: notes || null,
-              timeTaken: timeTaken || null
-            })
-          }
+          onClick={() => onAction(item.id, { status: 'taken' })}
             className={[
               'min-h-11 rounded-2xl px-4 text-sm font-semibold',
             status === 'taken' ? 'bg-teal text-white' : 'border border-line bg-field text-teal'
@@ -417,15 +351,7 @@ function IntakeRow({
         <button
           type="button"
           disabled={busy}
-          onClick={() =>
-            onAction(item.id, {
-              status: 'skipped',
-              amount: dose ? Number(dose) : null,
-              unit: unit || null,
-              notes: notes || null,
-              timeTaken: timeTaken || null
-            })
-          }
+          onClick={() => onAction(item.id, { status: 'skipped' })}
             className={[
               'min-h-11 rounded-2xl px-4 text-sm font-semibold',
             status === 'skipped' ? 'bg-gold text-teal' : 'border border-line bg-field text-muted'
@@ -461,13 +387,6 @@ function ErrorBanner({ message }: { message: string }) {
     </div>
   );
 }
-
-const fallbackQuickStats = [
-  { label: 'Weight trend', value: 'No logs yet', hint: 'Log daily weight to start the average.' },
-  { label: 'Body fat trend', value: 'No logs yet', hint: 'Weekly scans will populate this card.' },
-  { label: '3.2 km progress', value: '20:00', hint: 'Current benchmark until runs are logged.' },
-  { label: 'Weekly consistency', value: '0%', hint: 'Complete today’s actions to build the score.' }
-];
 
 function getTodayHeroContent(templateName: string | null | undefined) {
   const normalized = (templateName ?? '').toLowerCase();

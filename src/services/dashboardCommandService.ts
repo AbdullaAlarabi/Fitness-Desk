@@ -37,6 +37,7 @@ export async function getDashboardCommandSummary(now = new Date()): Promise<Dash
     const weightCard = body.cards.find((card) => card.key === 'weight');
     const bodyFatCard = body.cards.find((card) => card.key === 'body_fat');
     const weeklyAverage = body.calculatedMetrics.find((metric) => metric.key === 'weekly_average_weight');
+    const dailyWeightLogCount = body.series.weight.length;
     const bodyFatDelta = describeDelta(body.series.body_fat);
     const runGapSeconds = Math.max(0, running.latestThreePointTwoKmSeconds - RUN_TARGET_TIME_SECONDS);
 
@@ -57,7 +58,12 @@ export async function getDashboardCommandSummary(now = new Date()): Promise<Dash
         {
           label: 'Weight trend',
           value: weightCard?.value !== null && weightCard?.value !== undefined ? `${weightCard.value} kg` : 'No logs yet',
-          hint: weeklyAverage ? `7-day average: ${weeklyAverage.value}` : 'Log daily weight to build the average.'
+          hint:
+            dailyWeightLogCount === 0
+              ? 'Log daily weight to build the average.'
+              : dailyWeightLogCount === 1
+                ? `Latest daily weight saved. 7-day average: ${weeklyAverage?.value ?? 'Needs more logs'}.`
+                : `7-day average: ${weeklyAverage?.value ?? 'Needs more logs'}.`
         },
         {
           label: 'Body fat trend',

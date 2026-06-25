@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { Activity, CalendarDays, Dumbbell, LineChart, Scale } from 'lucide-react';
-import { StatCard } from './ui';
 import { subscribeDashboardRefresh } from '../lib/dashboardEvents';
 import { getDashboardCommandSummary, type DashboardCommandSummary } from '../services/dashboardCommandService';
 
@@ -45,28 +44,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-cream text-ink">
       <div className="mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 lg:px-8">
-        <header className={`fd-panel-dark relative mb-6 overflow-hidden ${isTodayPage ? 'px-5 py-4 sm:px-6 sm:py-4' : 'px-5 py-5 sm:px-6 sm:py-5'}`}>
+        <header className={`fd-panel-dark relative mb-6 overflow-hidden ${isTodayPage ? 'px-5 py-4 sm:px-6 sm:py-4' : 'px-5 py-4 sm:px-6 sm:py-4'}`}>
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/80 to-transparent" />
           <div className="absolute -right-16 top-0 h-32 w-32 rounded-full bg-gold/12 blur-3xl" />
-          <div className={isTodayPage ? '' : 'space-y-4'}>
+          <div className={isTodayPage ? '' : 'space-y-2'}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/54">Fitness Desk</p>
-                <h1 className={`${isTodayPage ? 'text-xl' : 'text-2xl'} mt-2 font-semibold tracking-[-0.04em] text-white`}>
-                  {isTodayPage ? 'Private performance desk' : 'Training control room'}
+                <h1 className={`${isTodayPage ? 'text-xl' : 'text-base'} mt-2 font-semibold tracking-[-0.04em] text-white`}>
+                  {isTodayPage ? 'Private performance desk' : 'Performance view'}
                 </h1>
               </div>
               <p className="max-w-2xl text-sm leading-6 text-white/72">
                 {summary?.commandLine ?? 'Train clean. Track honestly. Adjust with data.'}
               </p>
             </div>
-            {!isTodayPage ? (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {(summary?.quickStats ?? fallbackStats).map((card) => (
-                  <StatCard key={card.label} label={card.label} value={card.value} hint={card.hint} />
-                ))}
-              </div>
-            ) : null}
           </div>
         </header>
 
@@ -96,13 +88,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
-const fallbackStats = [
-  { label: 'Weight trend', value: 'No logs yet', hint: 'Log daily weight to start the average.' },
-  { label: 'Body fat trend', value: 'No logs yet', hint: 'Weekly scans will populate this card.' },
-  { label: '3.2 km progress', value: '20:00', hint: 'Current benchmark until runs are logged.' },
-  { label: 'Weekly consistency', value: '0%', hint: 'Complete today’s actions to build the score.' }
-];
 
 function NavEntry({ item, mobile = false }: { item: NavItem; mobile?: boolean }) {
   const Icon = item.icon;

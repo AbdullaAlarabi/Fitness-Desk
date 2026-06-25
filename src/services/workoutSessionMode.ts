@@ -159,6 +159,10 @@ export async function getWorkoutModeSnapshot(dateIso = format(new Date(), 'yyyy-
     const configExercise =
       planConfig?.exercises.find((item) => item.id === exercise.id || item.name === exercise.exercise_name) ?? null;
     const fallbackMedia = getExerciseMediaConfig(exercise.id ?? `exercise-${index + 1}`, exercise.exercise_name);
+    const extractedMediaThumb = normalizeMediaAssetPath(extractCoachField(exercise.notes, 'Media thumb'));
+    const extractedMediaFull = normalizeMediaAssetPath(extractCoachField(exercise.notes, 'Media full'));
+    const configMediaThumb = normalizeMediaAssetPath(configExercise?.mediaThumbnailUrl ?? null);
+    const configMediaFull = normalizeMediaAssetPath(configExercise?.mediaFullUrl ?? null);
 
     return {
       key: exercise.id ?? `placeholder-${index + 1}`,
@@ -178,8 +182,8 @@ export async function getWorkoutModeSnapshot(dateIso = format(new Date(), 'yyyy-
       mainCue: extractCoachField(exercise.notes, 'Cue'),
       commonMistake: extractCoachField(exercise.notes, 'Mistake'),
       alternatives: extractAlternatives(exercise.notes),
-      mediaThumbnailUrl: extractCoachField(exercise.notes, 'Media thumb') ?? configExercise?.mediaThumbnailUrl ?? fallbackMedia.mediaThumbnailUrl,
-      mediaFullUrl: extractCoachField(exercise.notes, 'Media full') ?? configExercise?.mediaFullUrl ?? fallbackMedia.mediaFullUrl,
+      mediaThumbnailUrl: extractedMediaThumb ?? fallbackMedia.mediaThumbnailUrl ?? configMediaThumb,
+      mediaFullUrl: extractedMediaFull ?? fallbackMedia.mediaFullUrl ?? configMediaFull,
       mediaType:
         (extractCoachField(exercise.notes, 'Media type') as WorkoutExerciseStep['mediaType'] | null) ??
         configExercise?.mediaType ??
@@ -486,6 +490,14 @@ function extractCoachField(notes: string | null | undefined, label: string) {
 function extractAlternatives(notes: string | null | undefined) {
   const raw = extractCoachField(notes, 'Alternatives');
   return raw ? raw.split('/').map((item) => item.trim()).filter(Boolean) : [];
+}
+
+function normalizeMediaAssetPath(value: string | null | undefined) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('coach-media/')) return null;
+  return trimmed;
 }
 
 function findTemplateForDate(templates: WorkoutTemplateRow[], dateIso: string) {

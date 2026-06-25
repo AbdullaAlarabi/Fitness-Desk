@@ -703,9 +703,13 @@ export function WorkoutPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-3">
                       <img
-                        src={exercise.mediaThumbnailUrl ?? assetUrl('assets/exercises/demo-placeholder.svg')}
+                        src={resolveExerciseImageUrl(exercise.mediaThumbnailUrl)}
                         alt={exercise.mediaAlt}
                         loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = assetUrl('assets/exercises/demo-placeholder.svg');
+                        }}
                         className="h-12 w-12 rounded-xl object-cover"
                       />
                       <div className="min-w-0">
@@ -746,10 +750,10 @@ export function WorkoutPage() {
               </div>
             ) : (
               <img
-                src={currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? assetUrl('assets/exercises/demo-placeholder.svg')}
-                alt={currentExercise.mediaAlt}
-                className="w-full rounded-[24px] border border-line object-cover"
-                onError={() => setDemoImageFailed(true)}
+              src={resolveExerciseImageUrl(currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? null)}
+              alt={currentExercise.mediaAlt}
+              className="w-full rounded-[24px] border border-line object-cover"
+              onError={() => setDemoImageFailed(true)}
               />
             )}
             <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
@@ -883,4 +887,12 @@ function formatSeconds(seconds: number) {
 function calculateDurationMinutes(createdAt: string) {
   const elapsedMs = Date.now() - new Date(createdAt).getTime();
   return Math.max(1, Math.round(elapsedMs / 60000));
+}
+
+function resolveExerciseImageUrl(value: string | null | undefined) {
+  if (!value || value.startsWith('coach-media/')) {
+    return assetUrl('assets/exercises/demo-placeholder.svg');
+  }
+
+  return value;
 }

@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig({
-    base: '/fitness-desk/',
+    base: '/Fitness-Desk/',
     plugins: [
         react(),
         VitePWA({
@@ -15,7 +15,7 @@ export default defineConfig({
                 theme_color: '#061414',
                 background_color: '#d2d3ce',
                 display: 'standalone',
-                start_url: '/fitness-desk/',
+                start_url: '/Fitness-Desk/',
                 icons: [
                     {
                         src: 'pwa-192x192.png',

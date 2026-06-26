@@ -51,11 +51,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className={isTodayPage ? '' : 'space-y-2'}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <img
-                  src={assetUrl('media/brand/fitness_desk_logo_horizontal.png')}
-                  alt="Fitness Desk logo"
-                  className="h-7 w-auto object-contain"
-                />
+                <div className="inline-flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(188,255,0,0.22)] bg-white/6 shadow-float">
+                    <img
+                      src={assetUrl('media/brand/fitness_desk_app_icon.png')}
+                      alt="Fitness Desk app icon"
+                      className="h-8 w-8 rounded-xl object-cover"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold tracking-[-0.05em] text-white">Fitness Desk</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold/88">Private performance desk</p>
+                  </div>
+                </div>
                 <h1 className={`${isTodayPage ? 'text-xl' : 'text-base'} mt-2 font-semibold tracking-[-0.04em] text-white`}>
                   {isTodayPage ? 'Private performance desk' : 'Performance view'}
                 </h1>

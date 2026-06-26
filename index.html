@@ -5,74 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#061414" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Fitness Desk" />
     <link rel="apple-touch-icon" href="./media/brand/fitness_desk_app_icon.png" />
     <link rel="icon" type="image/png" href="./media/brand/fitness_desk_app_icon.png" />
-    <style>
-      html,
-      body {
-        margin: 0;
-        min-height: 100%;
-        background: #d2d3ce;
-      }
-
-      .fd-boot {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        background: #d2d3ce;
-        overflow: hidden;
-      }
-
-      .fd-boot::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, rgba(6, 20, 20, 0.08) 0%, rgba(6, 20, 20, 0.26) 100%);
-      }
-
-      .fd-boot__image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      .fd-boot__label {
-        position: absolute;
-        z-index: 1;
-        bottom: max(40px, calc(24px + env(safe-area-inset-bottom)));
-        left: 50%;
-        margin: 0;
-        transform: translateX(-50%);
-        color: #e9ebe6;
-        font:
-          600 12px/1.4 system-ui,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          sans-serif;
-        letter-spacing: 0.18em;
-        text-align: center;
-        text-transform: uppercase;
-        text-shadow: 0 10px 30px rgba(6, 20, 20, 0.42);
-      }
-    </style>
     <title>Fitness Desk</title>
   </head>
   <body>
-    <div id="root">
-      <div class="fd-boot" aria-label="Fitness Desk loading screen">
-        <img
-          class="fd-boot__image"
-          src="./media/brand/fitness_desk_splash_screen.png"
-          alt="Fitness Desk splash screen"
-        />
-        <p class="fd-boot__label">Loading Fitness Desk</p>
-      </div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
   </html>

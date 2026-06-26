@@ -182,8 +182,8 @@ export async function getWorkoutModeSnapshot(dateIso = format(new Date(), 'yyyy-
       mainCue: extractCoachField(exercise.notes, 'Cue'),
       commonMistake: extractCoachField(exercise.notes, 'Mistake'),
       alternatives: extractAlternatives(exercise.notes),
-      mediaThumbnailUrl: extractedMediaThumb ?? fallbackMedia.mediaThumbnailUrl ?? configMediaThumb,
-      mediaFullUrl: extractedMediaFull ?? fallbackMedia.mediaFullUrl ?? configMediaFull,
+      mediaThumbnailUrl: extractedMediaThumb ?? configMediaThumb ?? fallbackMedia.mediaThumbnailUrl,
+      mediaFullUrl: extractedMediaFull ?? configMediaFull ?? fallbackMedia.mediaFullUrl,
       mediaType:
         (extractCoachField(exercise.notes, 'Media type') as WorkoutExerciseStep['mediaType'] | null) ??
         configExercise?.mediaType ??

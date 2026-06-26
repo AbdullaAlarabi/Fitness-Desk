@@ -13,7 +13,7 @@ const placeholder = (name: string): ExerciseMediaConfig => ({
   mediaThumbnailUrl: assetUrl('assets/exercises/demo-placeholder.svg'),
   mediaFullUrl: assetUrl('assets/exercises/demo-placeholder.svg'),
   mediaType: 'image',
-  mediaAlt: `${name} demo placeholder`
+  mediaAlt: `${name} demo image not available yet`
 });
 
 const media = (filename: string, alt: string): ExerciseMediaConfig => ({

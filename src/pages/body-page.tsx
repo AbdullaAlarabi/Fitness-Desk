@@ -38,6 +38,10 @@ export function BodyPage() {
   const [quickSleep, setQuickSleep] = useState('');
   const [quickSoreness, setQuickSoreness] = useState('');
   const [weeklyExpanded, setWeeklyExpanded] = useState(false);
+  const [showLatestMetrics, setShowLatestMetrics] = useState(false);
+  const [showCalculatedMetrics, setShowCalculatedMetrics] = useState(false);
+  const [showStatusLabels, setShowStatusLabels] = useState(false);
+  const [showTrends, setShowTrends] = useState(false);
   const [weeklyValues, setWeeklyValues] = useState({
     weight: '',
     bodyFat: '',
@@ -433,7 +437,12 @@ export function BodyPage() {
       </section>
 
       <SectionCard title="Latest metrics" eyebrow="Trend view">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-4 xl:hidden">
+          <button type="button" onClick={() => setShowLatestMetrics((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+            {showLatestMetrics ? 'Hide latest metrics' : 'Show latest metrics'}
+          </button>
+        </div>
+        <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${showLatestMetrics ? 'grid' : 'hidden xl:grid'}`}>
           {(snapshot?.cards ?? []).map((card) => (
             <MetricCard
               key={card.key}
@@ -448,7 +457,12 @@ export function BodyPage() {
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <SectionCard title="Calculated metrics" eyebrow="Derived from inputs">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mb-4 xl:hidden">
+            <button type="button" onClick={() => setShowCalculatedMetrics((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+              {showCalculatedMetrics ? 'Hide calculated metrics' : 'Show calculated metrics'}
+            </button>
+          </div>
+          <div className={`grid gap-4 sm:grid-cols-2 ${showCalculatedMetrics ? 'grid' : 'hidden xl:grid'}`}>
             {(snapshot?.calculatedMetrics ?? []).map((metric) => (
               <MetricCard key={metric.key} label={metric.label} value={metric.value} note={metric.note} />
             ))}
@@ -456,7 +470,12 @@ export function BodyPage() {
         </SectionCard>
 
         <SectionCard title="Status labels" eyebrow="Trend-first reading">
-          <div className="space-y-3">
+          <div className="mb-4 xl:hidden">
+            <button type="button" onClick={() => setShowStatusLabels((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+              {showStatusLabels ? 'Hide status labels' : 'Show status labels'}
+            </button>
+          </div>
+          <div className={`space-y-3 ${showStatusLabels ? 'block' : 'hidden xl:block'}`}>
             {(snapshot?.statusLabels ?? []).map((status) => (
               <div key={status.key} className="rounded-3xl border border-line/70 bg-white p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -474,6 +493,12 @@ export function BodyPage() {
 
       {hasChartData ? (
       <SectionCard title="Metric charts" eyebrow="Real Supabase data">
+        <div className="mb-4 xl:hidden">
+          <button type="button" onClick={() => setShowTrends((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+            {showTrends ? 'Hide trends' : 'Show trends'}
+          </button>
+        </div>
+        <div className={showTrends ? 'block' : 'hidden xl:block'}>
         <div className="mb-5 flex flex-wrap gap-2">
           {chartTabs.map((tab) => (
             <button
@@ -520,6 +545,7 @@ export function BodyPage() {
           ) : (
             <StateCard title="No chart data" message="Save check-ins to see trend lines." />
           )}
+        </div>
         </div>
       </SectionCard>
       ) : null}

@@ -57,6 +57,10 @@ export function ProgressPage() {
   const hasWeeklyBarData = (summary?.weeklyBars.length ?? 0) > 0;
   const hasBodyChartData = bodyChartData.length > 1;
   const hasRunChartData = runChartData.length > 1;
+  const [showWorkoutChart, setShowWorkoutChart] = useState(false);
+  const [showIntakeChart, setShowIntakeChart] = useState(false);
+  const [showBodyTrends, setShowBodyTrends] = useState(false);
+  const [showRunHistory, setShowRunHistory] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -88,7 +92,12 @@ export function ProgressPage() {
       {hasWeeklyBarData ? (
         <section className="grid gap-6 xl:grid-cols-2">
           <SectionCard title="Workout completion this week" eyebrow="Weekly bar chart">
-            <div className="h-72">
+            <div className="mb-4 xl:hidden">
+              <button type="button" onClick={() => setShowWorkoutChart((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+                {showWorkoutChart ? 'Hide workout chart' : 'View workout chart'}
+              </button>
+            </div>
+            <div className={`h-72 ${showWorkoutChart ? 'block' : 'hidden xl:block'}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={summary?.weeklyBars ?? []} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                   <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
@@ -102,7 +111,12 @@ export function ProgressPage() {
           </SectionCard>
 
           <SectionCard title="Intake adherence" eyebrow="Weekly bar chart">
-            <div className="h-72">
+            <div className="mb-4 xl:hidden">
+              <button type="button" onClick={() => setShowIntakeChart((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+                {showIntakeChart ? 'Hide intake chart' : 'View intake chart'}
+              </button>
+            </div>
+            <div className={`h-72 ${showIntakeChart ? 'block' : 'hidden xl:block'}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={summary?.weeklyBars ?? []} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                   <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
@@ -118,6 +132,11 @@ export function ProgressPage() {
       ) : null}
 
       <SectionCard title="Body trends" eyebrow="Metric lines">
+        <div className="mb-4 xl:hidden">
+          <button type="button" onClick={() => setShowBodyTrends((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+            {showBodyTrends ? 'Hide body trends' : 'View body trends'}
+          </button>
+        </div>
         <div className="mb-5 flex flex-wrap gap-2">
           {bodyTabs.map((tab) => (
             <button
@@ -134,7 +153,7 @@ export function ProgressPage() {
           ))}
         </div>
 
-        <div className="h-80">
+        <div className={`h-80 ${showBodyTrends ? 'block' : 'hidden xl:block'}`}>
           {hasBodyChartData ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={bodyChartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
@@ -222,7 +241,12 @@ export function ProgressPage() {
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <SectionCard title="Run test history" eyebrow="Saved 3.2 km entries">
-          <div className="space-y-3">
+          <div className="mb-4 xl:hidden">
+            <button type="button" onClick={() => setShowRunHistory((v) => !v)} className="fd-button-secondary min-h-11 px-4">
+              {showRunHistory ? 'Hide run history' : 'View run history'}
+            </button>
+          </div>
+          <div className={`space-y-3 ${showRunHistory ? 'block' : 'hidden xl:block'}`}>
             {(summary?.runningSnapshot.runs ?? [])
               .filter((run) => run.distance_km === 3.2 && typeof run.duration_seconds === 'number')
               .slice()

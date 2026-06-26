@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { ArrowRightLeft, CalendarDays, Check, Play, RotateCcw, Shuffle, SkipForward } from 'lucide-react';
+import { ArrowRightLeft, CalendarDays, Check, MoreHorizontal, Play, RotateCcw, Shuffle, SkipForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { SectionCard, Pill, StateCard } from '../components/ui';
@@ -271,24 +271,90 @@ function PlanDayCard({
         </div>
 
         <div className="flex flex-wrap gap-2 xl:max-w-sm xl:justify-end">
-          <ActionButton icon={<Play className="h-4 w-4" />} label="Start" disabled={busy || day.isRest} onClick={onStart} />
-          <ActionButton icon={<Check className="h-4 w-4" />} label="Mark complete" disabled={busy || day.isRest} onClick={onComplete} />
-          <ActionButton icon={<SkipForward className="h-4 w-4" />} label="Skip" disabled={busy || day.isRest} onClick={onSkip} />
-          <ActionButton icon={<Shuffle className="h-4 w-4" />} label="Shift forward" disabled={busy || day.isRest} onClick={onShift} />
-          <ActionButton icon={<ArrowRightLeft className="h-4 w-4" />} label="Move to another day" disabled={busy || day.isRest} onClick={onMove} />
-          <ActionButton icon={<RotateCcw className="h-4 w-4" />} label="Reset day" disabled={busy || !day.scheduledWorkout} onClick={onReset} />
-          {day.status === 'planned' && !day.isRest ? (
-            <Link
-              to={`/workout?date=${day.dateIso}`}
-              className="fd-button-accent min-h-11 gap-2 px-4"
-            >
-              <CalendarDays className="h-4 w-4" />
-              Open workout
-            </Link>
-          ) : null}
+          <div className="hidden md:flex md:flex-wrap md:gap-2 xl:max-w-sm xl:justify-end">
+            <ActionButton icon={<Play className="h-4 w-4" />} label="Start" disabled={busy || day.isRest} onClick={onStart} />
+            <ActionButton icon={<Check className="h-4 w-4" />} label="Mark complete" disabled={busy || day.isRest} onClick={onComplete} />
+            <ActionButton icon={<SkipForward className="h-4 w-4" />} label="Skip" disabled={busy || day.isRest} onClick={onSkip} />
+            <ActionButton icon={<Shuffle className="h-4 w-4" />} label="Shift forward" disabled={busy || day.isRest} onClick={onShift} />
+            <ActionButton icon={<ArrowRightLeft className="h-4 w-4" />} label="Move to another day" disabled={busy || day.isRest} onClick={onMove} />
+            <ActionButton icon={<RotateCcw className="h-4 w-4" />} label="Reset day" disabled={busy || !day.scheduledWorkout} onClick={onReset} />
+            {day.status === 'planned' && !day.isRest ? (
+              <Link
+                to={`/workout?date=${day.dateIso}`}
+                className="fd-button-accent min-h-11 gap-2 px-4"
+              >
+                <CalendarDays className="h-4 w-4" />
+                Open workout
+              </Link>
+            ) : null}
+          </div>
+          <div className="flex w-full items-center gap-2 md:hidden">
+            {day.isRest ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onComplete}
+                className="fd-button-accent min-h-11 flex-1 gap-2 px-4 disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" />
+                Mark walk complete
+              </button>
+            ) : day.status === 'planned' ? (
+              <Link to={`/workout?date=${day.dateIso}`} className="fd-button-accent min-h-11 flex-1 gap-2 px-4">
+                <CalendarDays className="h-4 w-4" />
+                Open workout
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onStart}
+                className="fd-button-accent min-h-11 flex-1 gap-2 px-4 disabled:opacity-50"
+              >
+                <Play className="h-4 w-4" />
+                Start
+              </button>
+            )}
+            <details className="relative">
+              <summary className="fd-button-secondary min-h-11 list-none px-3">
+                <MoreHorizontal className="h-4 w-4" />
+              </summary>
+              <div className="absolute right-0 top-14 z-20 w-56 rounded-2xl border border-line bg-white p-2 shadow-card">
+                <MobileMenuButton label="Mark complete" icon={<Check className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onComplete} />
+                <MobileMenuButton label="Skip" icon={<SkipForward className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onSkip} />
+                <MobileMenuButton label="Shift forward" icon={<Shuffle className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onShift} />
+                <MobileMenuButton label="Move day" icon={<ArrowRightLeft className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onMove} />
+                <MobileMenuButton label="Reset day" icon={<RotateCcw className="h-4 w-4" />} disabled={busy || !day.scheduledWorkout} onClick={onReset} />
+              </div>
+            </details>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function MobileMenuButton({
+  icon,
+  label,
+  disabled,
+  onClick
+}: {
+  icon: React.ReactNode;
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-teal disabled:opacity-50"
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 

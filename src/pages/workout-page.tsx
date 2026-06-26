@@ -532,22 +532,30 @@ export function WorkoutPage() {
       ) : null}
 
       {snapshot && snapshot.sessionType === 'gym' && snapshot.session && !workoutComplete && currentExercise ? (
-        <section className="space-y-4">
+        <section className="space-y-4 pb-24 lg:pb-0">
           <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player">
-            <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-4 sm:p-5">
+            <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-4 sm:p-5 lg:space-y-5">
               <div>
                 <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
                 <p className="mt-2 text-sm text-muted">
-                  {currentExercise.setCount} sets · {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} reps · Rest {currentExercise.restSeconds}s
+                  <span className="lg:hidden">
+                    {currentExercise.setCount} x {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
+                  </span>
+                  <span className="hidden lg:inline">
+                    {currentExercise.setCount} sets · {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} reps · Rest {currentExercise.restSeconds}s
+                  </span>
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-line bg-card px-4 py-4">
+              <div className="rounded-2xl border border-line bg-card px-4 py-4 hidden lg:block">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Current set</p>
                 <p className="mt-2 text-xl font-semibold text-teal">
                   Set {currentSetNumber} of {currentExercise.setCount}
                 </p>
               </div>
+              <p className="text-base font-semibold text-teal lg:hidden">
+                Set {currentSetNumber} of {currentExercise.setCount}
+              </p>
 
               {completedSets < currentExercise.setCount ? (
                 <>
@@ -578,7 +586,7 @@ export function WorkoutPage() {
                     type="button"
                     onClick={() => void handleSaveSet()}
                     disabled={setSaving}
-                    className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 text-base disabled:opacity-60"
+                    className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 text-base disabled:opacity-60 hidden lg:inline-flex"
                   >
                     {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                     Save Set
@@ -606,17 +614,30 @@ export function WorkoutPage() {
               <div className="flex flex-wrap gap-2">
                 <SmallButton onClick={() => setShowCoachNotes(true)}>Coach notes</SmallButton>
                 <SmallButton onClick={() => setShowDemo(true)}>Demo</SmallButton>
-                <SmallButton onClick={() => setShowFullPlan(true)}>View full plan</SmallButton>
+                <SmallButton onClick={() => setShowFullPlan(true)}>Full plan</SmallButton>
               </div>
 
-              <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal">
+              <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal lg:bg-card lg:border-line border-none bg-transparent px-0 py-0 lg:px-4 lg:py-3">
                 Clean reps · 1-2 reps in reserve · follow rest timer
               </div>
-              <button type="button" onClick={() => setShowRules(true)} className="text-sm font-semibold text-teal">
+              <button type="button" onClick={() => setShowRules(true)} className="text-xs font-semibold text-muted hidden lg:inline">
                 View rules
               </button>
             </div>
           </SectionCard>
+          {completedSets < currentExercise.setCount ? (
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/96 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+              <button
+                type="button"
+                onClick={() => void handleSaveSet()}
+                disabled={setSaving}
+                className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 text-base disabled:opacity-60"
+              >
+                {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Save Set
+              </button>
+            </div>
+          ) : null}
 
           {completedSets >= currentExercise.setCount ? (
             <Card className="space-y-4">
@@ -814,7 +835,7 @@ function MiniMeta({ label, value }: { label: string; value: string }) {
 
 function SmallButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="fd-button-secondary min-h-10 px-4 text-sm">
+    <button type="button" onClick={onClick} className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm">
       {children}
     </button>
   );

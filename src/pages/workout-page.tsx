@@ -22,7 +22,7 @@ import {
   saveRunningSession,
   type RunningSessionType
 } from '../services/runningServices';
-import { getDayMedia } from '../data/dayMedia';
+import { getDayCoverMedia, getExerciseDemoPlaceholder } from '../data/mediaManifest';
 import { assetUrl } from '../lib/assets';
 import {
   completeWorkoutSession,
@@ -93,7 +93,7 @@ export function WorkoutPage() {
     () => snapshot?.exercises.slice(0, 5).map((exercise) => exercise.exerciseName) ?? [],
     [snapshot?.exercises]
   );
-  const dayMedia = getDayMedia(snapshot?.planConfig?.dayNumber ?? 1);
+  const dayMedia = getDayCoverMedia(snapshot?.planConfig?.dayNumber ?? 1);
   const isActiveGymWorkout = Boolean(snapshot?.session && snapshot.sessionType === 'gym' && !workoutComplete);
 
   useEffect(() => {
@@ -432,7 +432,8 @@ export function WorkoutPage() {
             <img
               src={dayMedia.imageUrl}
               alt={dayMedia.alt}
-              className="h-24 w-full rounded-2xl object-cover"
+              className="h-28 w-full rounded-[20px] object-cover md:h-36"
+              style={{ objectPosition: dayMedia.objectPosition }}
             />
             <button
               type="button"
@@ -729,7 +730,7 @@ export function WorkoutPage() {
                         loading="lazy"
                         onError={(event) => {
                           event.currentTarget.onerror = null;
-                          event.currentTarget.src = assetUrl('assets/exercises/demo-placeholder.svg');
+                          event.currentTarget.src = getExerciseDemoPlaceholder().imageUrl;
                         }}
                         className="h-12 w-12 rounded-xl object-cover"
                       />
@@ -773,7 +774,7 @@ export function WorkoutPage() {
               <img
               src={resolveExerciseImageUrl(currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? null)}
               alt={currentExercise.mediaAlt}
-              className="w-full rounded-[24px] border border-line object-cover"
+              className="max-h-[60vh] w-full rounded-[24px] border border-line object-contain sm:max-h-[68vh]"
               onError={() => setDemoImageFailed(true)}
               />
             )}
@@ -912,7 +913,7 @@ function calculateDurationMinutes(createdAt: string) {
 
 function resolveExerciseImageUrl(value: string | null | undefined) {
   if (!value || value.startsWith('coach-media/')) {
-    return assetUrl('assets/exercises/demo-placeholder.svg');
+    return getExerciseDemoPlaceholder().imageUrl;
   }
 
   return value;

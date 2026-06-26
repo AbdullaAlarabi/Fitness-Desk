@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { ArrowRight, CheckCircle2, Circle, Dumbbell, Loader2, Moon, Play, Sun, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, MetricCard, SectionCard, StateCard } from '../components/ui';
-import { getDayMedia } from '../data/dayMedia';
+import { getDayCoverMedia, getTodayHeroMedia } from '../data/mediaManifest';
 import { getWorkoutHeroCopy } from '../data/workout-plan';
 import { getDashboardCommandSummary, type DashboardCommandSummary } from '../services/dashboardCommandService';
 import {
@@ -96,7 +96,8 @@ export function TodayPage() {
   const intakeFullyDecided = intakeTarget > 0 && intakeItems.every((item) => item.todayLog?.status === 'taken' || item.todayLog?.status === 'skipped');
   const todayWorkoutTitle = snapshot?.workout.cycleDay.title ?? 'Training day';
   const heroContent = snapshot?.workout.cycleDay ? getWorkoutHeroCopy(snapshot.workout.cycleDay) : getTodayHeroContent(null);
-  const todayDayMedia = getDayMedia(snapshot?.workout.cycleDay.dayNumber ?? 1);
+  const todayCoverMedia = getDayCoverMedia(snapshot?.workout.cycleDay.dayNumber ?? 1);
+  const todayHeroMedia = getTodayHeroMedia(snapshot?.workout.cycleDay.sessionType ?? null);
   const todayWorkoutComplete = snapshot?.workout.sessionCompleted ?? false;
 
   return (
@@ -105,10 +106,12 @@ export function TodayPage() {
         <div className="fd-panel-dark relative overflow-hidden p-6 sm:p-8">
           <div className="absolute -right-20 top-0 h-40 w-40 rounded-full bg-gold/12 blur-3xl" />
           <img
-            src={todayDayMedia.imageUrl}
-            alt={todayDayMedia.alt}
-            className="absolute inset-y-0 right-0 hidden h-full w-48 object-cover opacity-20 md:block"
+            src={todayHeroMedia.imageUrl}
+            alt={todayHeroMedia.alt}
+            className="absolute inset-0 h-full w-full object-cover opacity-28"
+            style={{ objectPosition: todayHeroMedia.objectPosition }}
           />
+          <div className="absolute inset-0 bg-gradient-to-r from-teal via-teal/92 to-teal/55" />
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/58">
             {format(new Date(), 'EEEE, MMMM d')}
           </p>
@@ -212,9 +215,10 @@ export function TodayPage() {
               </div>
             </div>
             <img
-              src={todayDayMedia.imageUrl}
-              alt={todayDayMedia.alt}
-              className="mt-4 h-24 w-full rounded-2xl object-cover"
+              src={todayCoverMedia.imageUrl}
+              alt={todayCoverMedia.alt}
+              className="mt-4 h-28 w-full rounded-[20px] object-cover md:h-36"
+              style={{ objectPosition: todayCoverMedia.objectPosition }}
             />
           </Card>
         </SectionCard>

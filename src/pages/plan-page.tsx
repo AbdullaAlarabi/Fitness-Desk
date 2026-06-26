@@ -4,7 +4,7 @@ import { ArrowRightLeft, CalendarDays, Check, MoreHorizontal, Play, RotateCcw, S
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { SectionCard, Pill, StateCard } from '../components/ui';
-import { getDayMedia } from '../data/dayMedia';
+import { getDayCoverMedia } from '../data/mediaManifest';
 import {
   getPlanWeekSnapshot,
   markPlanDayStatus,
@@ -247,7 +247,7 @@ function PlanDayCard({
   onMove: () => void;
   onReset: () => void;
 }) {
-  const dayMedia = getDayMedia(day.cycleDay.dayNumber);
+  const dayMedia = getDayCoverMedia(day.cycleDay.dayNumber);
 
   return (
     <div className={['rounded-3xl border p-4 shadow-float', day.isRest ? 'border-line bg-card' : 'border-line bg-white'].join(' ')}>
@@ -266,7 +266,8 @@ function PlanDayCard({
             src={dayMedia.imageUrl}
             alt={dayMedia.alt}
             loading="lazy"
-            className="mt-3 h-20 w-full max-w-sm rounded-2xl object-cover"
+            className="mt-3 h-28 w-full max-w-sm rounded-[20px] object-cover md:h-32"
+            style={{ objectPosition: dayMedia.objectPosition }}
           />
         </div>
 

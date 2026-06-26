@@ -1,0 +1,12 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="40" fill="#F4EFD7"/>
+  <rect x="42" y="42" width="1116" height="636" rx="28" fill="#FBF7EC" stroke="#D6C4A6" stroke-width="2"/>
+  <circle cx="265" cy="312" r="110" fill="#E8D9BD"/>
+  <rect x="404" y="196" width="520" height="26" rx="13" fill="#13434F" fill-opacity="0.12"/>
+  <rect x="404" y="252" width="430" height="26" rx="13" fill="#13434F" fill-opacity="0.12"/>
+  <rect x="404" y="308" width="380" height="26" rx="13" fill="#13434F" fill-opacity="0.12"/>
+  <rect x="404" y="396" width="220" height="58" rx="18" fill="#B08A42" fill-opacity="0.18"/>
+  <text x="404" y="138" fill="#13434F" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="700">Demo media will be added here</text>
+  <text x="404" y="430" fill="#13434F" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="600">Placeholder image</text>
+  <text x="179" y="333" fill="#13434F" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">FD</text>
+</svg>

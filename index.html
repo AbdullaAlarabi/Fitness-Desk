@@ -18,32 +18,36 @@
       }
 
       .fd-boot {
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 24px;
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
         background: #d2d3ce;
+        overflow: hidden;
       }
 
-      .fd-boot__panel {
-        width: min(100%, 320px);
-        border: 1px solid rgba(6, 20, 20, 0.12);
-        border-radius: 28px;
-        background: #e9ebe6;
-        padding: 16px;
-        box-shadow: 0 18px 48px rgba(6, 20, 20, 0.08);
+      .fd-boot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(6, 20, 20, 0.08) 0%, rgba(6, 20, 20, 0.26) 100%);
       }
 
       .fd-boot__image {
-        display: block;
         width: 100%;
-        height: auto;
-        border-radius: 20px;
+        height: 100%;
+        object-fit: cover;
       }
 
       .fd-boot__label {
-        margin: 12px 0 0;
-        color: #061414;
+        position: absolute;
+        z-index: 1;
+        bottom: max(40px, calc(24px + env(safe-area-inset-bottom)));
+        left: 50%;
+        margin: 0;
+        transform: translateX(-50%);
+        color: #e9ebe6;
         font:
           600 12px/1.4 system-ui,
           -apple-system,
@@ -53,6 +57,7 @@
         letter-spacing: 0.18em;
         text-align: center;
         text-transform: uppercase;
+        text-shadow: 0 10px 30px rgba(6, 20, 20, 0.42);
       }
     </style>
     <title>Fitness Desk</title>
@@ -60,14 +65,12 @@
   <body>
     <div id="root">
       <div class="fd-boot" aria-label="Fitness Desk loading screen">
-        <div class="fd-boot__panel">
-          <img
-            class="fd-boot__image"
-            src="./media/brand/fitness_desk_splash_screen.png"
-            alt="Fitness Desk splash screen"
-          />
-          <p class="fd-boot__label">Loading Fitness Desk</p>
-        </div>
+        <img
+          class="fd-boot__image"
+          src="./media/brand/fitness_desk_splash_screen.png"
+          alt="Fitness Desk splash screen"
+        />
+        <p class="fd-boot__label">Loading Fitness Desk</p>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

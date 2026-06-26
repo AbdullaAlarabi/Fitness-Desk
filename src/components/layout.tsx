@@ -61,7 +61,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </div>
                   <div>
                     <p className="text-lg font-semibold tracking-[-0.05em] text-white">Fitness Desk</p>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold/88">Private performance desk</p>
                   </div>
                 </div>
                 <h1 className={`${isTodayPage ? 'text-xl' : 'text-base'} mt-2 font-semibold tracking-[-0.04em] text-white`}>

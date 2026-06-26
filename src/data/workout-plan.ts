@@ -36,6 +36,8 @@ export type WorkoutHeroCopy = {
   command: string;
 };
 
+const TRAINING_CYCLE_ANCHOR = new Date('2026-06-27T12:00:00');
+
 export const workoutRules = [
   'Warm up for 5 minutes: treadmill walk, bike, or cross trainer.',
   'Use a weight where the last clean rep still stays in reserve.',
@@ -766,8 +768,7 @@ export function getWorkoutPlanByDayNumber(dayNumber: number) {
 }
 
 export function getWorkoutPlanDayForDate(date: Date) {
-  const weekday = date.getDay();
-  const dayNumber = weekday === 0 ? 7 : weekday;
+  const dayNumber = getAnchoredCycleDayNumber(date);
   return getWorkoutPlanByDayNumber(dayNumber);
 }
 
@@ -838,4 +839,16 @@ export function getWorkoutPlanDayByTemplate(name: string | null | undefined, day
 
   if (!name) return null;
   return workoutPlan.find((day) => day.title.toLowerCase() === name.toLowerCase()) ?? null;
+}
+
+function getAnchoredCycleDayNumber(date: Date) {
+  const anchor = startOfLocalDay(TRAINING_CYCLE_ANCHOR);
+  const target = startOfLocalDay(date);
+  const diffDays = Math.round((target.getTime() - anchor.getTime()) / 86400000);
+  const normalized = ((diffDays % 7) + 7) % 7;
+  return normalized + 1;
+}
+
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

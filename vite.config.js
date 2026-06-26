@@ -2,12 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig({
-    base: '/fitness-desk/',
+    base: '/Fitness-Desk/',
     plugins: [
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.svg', 'media/brand/fitness_desk_app_icon.png'],
+            includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
             manifest: {
                 name: 'Fitness Desk',
                 short_name: 'Fitness Desk',
@@ -15,20 +15,20 @@ export default defineConfig({
                 theme_color: '#061414',
                 background_color: '#d2d3ce',
                 display: 'standalone',
-                start_url: '/fitness-desk/',
+                start_url: '/Fitness-Desk/',
                 icons: [
                     {
-                        src: 'media/brand/fitness_desk_app_icon.png',
+                        src: 'pwa-192x192.png',
+                        sizes: '192x192',
+                        type: 'image/png'
+                    },
+                    {
+                        src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png'
                     },
                     {
-                        src: 'media/brand/fitness_desk_app_icon.png',
-                        sizes: '512x512',
-                        type: 'image/png'
-                    },
-                    {
-                        src: 'media/brand/fitness_desk_app_icon.png',
+                        src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png',
                         purpose: 'maskable'

@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </div>
                 </div>
                 <h1 className={`${isTodayPage ? 'text-xl' : 'text-base'} mt-2 font-semibold tracking-[-0.04em] text-white`}>
-                  {isTodayPage ? 'Private performance desk' : 'Performance view'}
+                  Private performance desk
                 </h1>
               </div>
               <p className="max-w-2xl text-sm leading-6 text-white/72">

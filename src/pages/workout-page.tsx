@@ -626,12 +626,12 @@ export function WorkoutPage() {
             </div>
           </SectionCard>
           {completedSets < currentExercise.setCount ? (
-            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/96 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+            <div className="fixed inset-x-0 bottom-[calc(4.9rem+env(safe-area-inset-bottom))] z-30 px-4 lg:hidden">
               <button
                 type="button"
                 onClick={() => void handleSaveSet()}
                 disabled={setSaving}
-                className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 text-base disabled:opacity-60"
+                className="fd-button-accent min-h-12 w-full justify-center gap-2 border border-line/70 px-5 text-base shadow-card disabled:opacity-60"
               >
                 {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Save Set

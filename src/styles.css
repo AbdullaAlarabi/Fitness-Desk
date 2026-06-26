@@ -92,14 +92,13 @@ a:focus-visible {
 }
 
 @media (max-width: 1023px) {
-  body.fd-workout-active-mobile .fd-shell-header,
-  body.fd-workout-active-mobile .fd-shell-mobile-nav {
+  body.fd-workout-active-mobile .fd-shell-header {
     display: none;
   }
 
   body.fd-workout-active-mobile .fd-shell-root {
     padding-top: max(0.75rem, env(safe-area-inset-top));
-    padding-bottom: 1rem;
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 }
 

@@ -626,7 +626,7 @@ export function WorkoutPage() {
             </div>
           </SectionCard>
           {completedSets < currentExercise.setCount ? (
-            <div className="fixed inset-x-0 bottom-[calc(4.9rem+env(safe-area-inset-bottom))] z-30 px-4 lg:hidden">
+            <div className="fixed inset-x-0 bottom-[calc(6.4rem+env(safe-area-inset-bottom))] z-30 px-4 lg:hidden">
               <button
                 type="button"
                 onClick={() => void handleSaveSet()}

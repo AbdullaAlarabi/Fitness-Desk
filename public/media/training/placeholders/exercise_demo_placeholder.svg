@@ -1,12 +1,16 @@
-<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="720" rx="40" fill="#F4EFD7"/>
-  <rect x="42" y="42" width="1116" height="636" rx="28" fill="#FBF7EC" stroke="#D6C4A6" stroke-width="2"/>
-  <circle cx="265" cy="312" r="110" fill="#E8D9BD"/>
-  <rect x="404" y="196" width="520" height="26" rx="13" fill="#13434F" fill-opacity="0.12"/>
-  <rect x="404" y="252" width="430" height="26" rx="13" fill="#13434F" fill-opacity="0.12"/>
-  <rect x="404" y="308" width="380" height="26" rx="13" fill="#13434F" fill-opacity="0.12"/>
-  <rect x="404" y="396" width="220" height="58" rx="18" fill="#B08A42" fill-opacity="0.18"/>
-  <text x="404" y="138" fill="#13434F" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="700">Demo media will be added here</text>
-  <text x="404" y="430" fill="#13434F" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="600">Placeholder image</text>
-  <text x="179" y="333" fill="#13434F" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">FD</text>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exercise demo placeholder">
+  <rect width="512" height="512" rx="96" fill="#F6E4CC"/>
+  <circle cx="256" cy="236" r="126" stroke="#13434F" stroke-width="16" stroke-linecap="round" stroke-dasharray="230 44"/>
+  <path d="M170 302H342" stroke="#13434F" stroke-width="14" stroke-linecap="round"/>
+  <path d="M188 332H324" stroke="#13434F" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="256" cy="176" r="33" stroke="#13434F" stroke-width="16"/>
+  <path d="M218 220C226 246 236 260 256 260C276 260 286 246 294 220" stroke="#13434F" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M214 234L180 212M298 234L332 212" stroke="#13434F" stroke-width="16" stroke-linecap="round"/>
+  <path d="M148 199H194M318 199H364" stroke="#13434F" stroke-width="16" stroke-linecap="round"/>
+  <path d="M136 184V214M376 184V214" stroke="#13434F" stroke-width="16" stroke-linecap="round"/>
+  <path d="M224 260L204 334M288 260L308 334" stroke="#13434F" stroke-width="16" stroke-linecap="round"/>
+  <path d="M210 334H178M302 334H334" stroke="#13434F" stroke-width="16" stroke-linecap="round"/>
+  <path d="M216 100C240 90 272 90 296 100" stroke="#A7FF00" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="146" cy="256" r="8" fill="#A7FF00"/>
+  <circle cx="366" cy="256" r="8" fill="#A7FF00"/>
 </svg>

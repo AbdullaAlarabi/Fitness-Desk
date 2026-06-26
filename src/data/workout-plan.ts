@@ -36,7 +36,7 @@ export type WorkoutHeroCopy = {
   command: string;
 };
 
-const TRAINING_CYCLE_ANCHOR = new Date('2026-06-27T12:00:00');
+export const TRAINING_CYCLE_ANCHOR = new Date('2026-06-27T12:00:00');
 
 export const workoutRules = [
   'Warm up for 5 minutes: treadmill walk, bike, or cross trainer.',
@@ -839,6 +839,21 @@ export function getWorkoutPlanDayByTemplate(name: string | null | undefined, day
 
   if (!name) return null;
   return workoutPlan.find((day) => day.title.toLowerCase() === name.toLowerCase()) ?? null;
+}
+
+export function getTrainingCycleStart(date: Date) {
+  const anchor = startOfLocalDay(TRAINING_CYCLE_ANCHOR);
+  const target = startOfLocalDay(date);
+  const diffDays = Math.round((target.getTime() - anchor.getTime()) / 86400000);
+
+  if (diffDays < 0) {
+    return anchor;
+  }
+
+  const cycleOffsetDays = Math.floor(diffDays / 7) * 7;
+  const cycleStart = new Date(anchor);
+  cycleStart.setDate(anchor.getDate() + cycleOffsetDays);
+  return cycleStart;
 }
 
 function getAnchoredCycleDayNumber(date: Date) {

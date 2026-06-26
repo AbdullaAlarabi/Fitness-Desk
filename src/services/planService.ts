@@ -1,8 +1,8 @@
-import { addDays, format, isBefore, startOfWeek } from 'date-fns';
+import { addDays, format, isBefore } from 'date-fns';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
 import type { ScheduledWorkoutRow, WorkoutTemplateRow } from '../types/database';
-import { getWorkoutPlanDayForDate, type WorkoutPlanDayConfig } from '../data/workout-plan';
+import { getTrainingCycleStart, getWorkoutPlanDayForDate, type WorkoutPlanDayConfig } from '../data/workout-plan';
 
 export type PlanStatus = 'planned' | 'completed' | 'skipped' | 'shifted' | 'rest' | 'missed';
 
@@ -38,7 +38,7 @@ export async function getPlanDayByDate(dateIso: string, now = new Date()) {
 
 export async function getPlanWeekSnapshot(now = new Date()): Promise<PlanWeekSnapshot> {
   const client = getSupabaseClient();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekStart = getTrainingCycleStart(now);
   const weekEnd = addDays(weekStart, 6);
 
   const [templateResult, scheduledResult] = await Promise.all([
@@ -145,7 +145,7 @@ export async function shiftPlanForward(options: ShiftOptions, now = new Date()) 
 
 async function getPlanHorizon(now: Date, length: number) {
   const client = getSupabaseClient();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekStart = getTrainingCycleStart(now);
   const end = addDays(weekStart, length - 1);
 
   const [templateResult, scheduledResult] = await Promise.all([

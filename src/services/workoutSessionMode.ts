@@ -1,9 +1,9 @@
-import { format, getDay } from 'date-fns';
+import { format } from 'date-fns';
 import { getExerciseMediaConfig } from '../data/exerciseMedia';
 import { emitDashboardRefresh } from '../lib/dashboardEvents';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
-import { getWorkoutPlanDayByTemplate, workoutRules, type WorkoutPlanDayConfig } from '../data/workout-plan';
+import { getWorkoutPlanDayByTemplate, getWorkoutPlanDayForDate, workoutRules, type WorkoutPlanDayConfig } from '../data/workout-plan';
 import { resolveTrainingDayForDate } from './trainingCycle';
 import type {
   ScheduledWorkoutRow,
@@ -502,7 +502,6 @@ function normalizeMediaAssetPath(value: string | null | undefined) {
 
 function findTemplateForDate(templates: WorkoutTemplateRow[], dateIso: string) {
   const date = new Date(`${dateIso}T12:00:00`);
-  const dayNumber = getDay(date);
-  const dayLabel = `Day ${dayNumber === 0 ? 7 : dayNumber}`;
+  const dayLabel = `Day ${getWorkoutPlanDayForDate(date).dayNumber}`;
   return templates.find((template) => template.day_label === dayLabel) ?? null;
 }

@@ -1,6 +1,6 @@
-import { format, getDay } from 'date-fns';
+import { format } from 'date-fns';
 import { intakeSchedule, intakeTimingLabels, intakeTimingOrder, normalizeIntakeTiming, type IntakeTiming } from '../data/intakeSchedule';
-import type { WorkoutPlanDayConfig } from '../data/workout-plan';
+import { getWorkoutPlanDayForDate, type WorkoutPlanDayConfig } from '../data/workout-plan';
 import { emitDashboardRefresh } from '../lib/dashboardEvents';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
@@ -493,7 +493,6 @@ function getGreeting(now: Date) {
 }
 
 function findTemplateForDate(templates: WorkoutTemplateRow[], date: Date) {
-  const dayNumber = getDay(date);
-  const dayLabel = `Day ${dayNumber === 0 ? 7 : dayNumber}`;
+  const dayLabel = `Day ${getWorkoutPlanDayForDate(date).dayNumber}`;
   return templates.find((template) => template.day_label === dayLabel) ?? null;
 }

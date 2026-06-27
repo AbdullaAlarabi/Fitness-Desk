@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowRight, CheckCircle2, Circle, Dumbbell, Loader2, Moon, Play, Sun, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Card, MetricCard, SectionCard, StateCard } from '../components/ui';
+import { Card, MediaFrame, MetricCard, SectionCard, StateCard } from '../components/ui';
 import { getDayCoverMedia, getTodayHeroMedia } from '../data/mediaManifest';
 import { getWorkoutHeroCopy } from '../data/workout-plan';
 import { getDashboardCommandSummary, type DashboardCommandSummary } from '../services/dashboardCommandService';
@@ -103,53 +103,58 @@ export function TodayPage() {
   return (
     <div className="space-y-6">
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="fd-panel-dark relative overflow-hidden p-6 sm:p-8">
+        <div className="fd-panel-dark relative min-h-[320px] overflow-hidden p-5 sm:min-h-[380px] sm:p-8">
           <div className="absolute -right-20 top-0 h-40 w-40 rounded-full bg-gold/12 blur-3xl" />
-          <img
+          <MediaFrame
             src={todayHeroMedia.imageUrl}
             alt={todayHeroMedia.alt}
-            className="absolute inset-0 h-full w-full object-cover opacity-28"
-            style={{ objectPosition: todayHeroMedia.objectPosition }}
+            tone="dark"
+            loading="eager"
+            wrapperClassName="absolute inset-0"
+            imageClassName="h-full w-full object-cover opacity-28"
+            imageStyle={{ objectPosition: todayHeroMedia.objectPosition }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-teal via-teal/92 to-teal/55" />
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/58">
-            {format(new Date(), 'EEEE, MMMM d')}
-          </p>
-          <p className="mt-3 text-5xl font-semibold tracking-[-0.06em] text-white sm:text-6xl">TODAY</p>
-          <p className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">
-            {heroContent.title}
-          </p>
-          <p className="mt-2 max-w-2xl text-sm font-medium uppercase tracking-[0.18em] text-gold">
-            {heroContent.focus}
-          </p>
-          <p className="mt-6 max-w-2xl text-lg leading-7 text-white/84">{heroContent.command}</p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            {todayWorkoutComplete ? (
-              <button
-                type="button"
-                onClick={() => window.scrollTo({ top: document.body.scrollHeight * 0.45, behavior: 'smooth' })}
-                className="fd-button-accent min-w-[176px]"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Continue intake
-              </button>
-            ) : (
-              <Link
-                to={`/workout?date=${snapshot?.todayIso ?? format(new Date(), 'yyyy-MM-dd')}`}
-                className="fd-button-accent min-w-[176px]"
-              >
-                <Play className="h-4 w-4" />
-                Start session
-              </Link>
-            )}
-            <div className="inline-flex min-h-12 items-center rounded-2xl border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/86">
-              {commandSummary?.nextAction ?? 'Start the session. Save the sets. Finish clean.'}
+          <div className="relative z-10 max-w-3xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/58">
+              {format(new Date(), 'EEEE, MMMM d')}
+            </p>
+            <p className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-white sm:text-6xl">TODAY</p>
+            <p className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">
+              {heroContent.title}
+            </p>
+            <p className="mt-2 max-w-2xl text-sm font-medium uppercase tracking-[0.18em] text-gold">
+              {heroContent.focus}
+            </p>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-white/84 sm:text-lg">{heroContent.command}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {todayWorkoutComplete ? (
+                <button
+                  type="button"
+                  onClick={() => window.scrollTo({ top: document.body.scrollHeight * 0.45, behavior: 'smooth' })}
+                  className="fd-button-accent min-w-[176px]"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Continue intake
+                </button>
+              ) : (
+                <Link
+                  to={`/workout?date=${snapshot?.todayIso ?? format(new Date(), 'yyyy-MM-dd')}`}
+                  className="fd-button-accent min-w-[176px]"
+                >
+                  <Play className="h-4 w-4" />
+                  Start session
+                </Link>
+              )}
+              <div className="inline-flex min-h-12 items-center rounded-2xl border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/86">
+                {commandSummary?.nextAction ?? 'Start the session. Save the sets. Finish clean.'}
+              </div>
             </div>
-          </div>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <HeroMetric label="Today’s workout" value={commandSummary?.todaysWorkout ?? todayWorkoutTitle} />
-            <HeroMetric label="Completion score" value={`${score}%`} />
-            <HeroMetric label="Workout status" value={commandSummary?.workoutStatus ?? 'Ready'} />
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <HeroMetric label="Today’s workout" value={commandSummary?.todaysWorkout ?? todayWorkoutTitle} />
+              <HeroMetric label="Completion score" value={`${score}%`} />
+              <HeroMetric label="Workout status" value={commandSummary?.workoutStatus ?? 'Ready'} />
+            </div>
           </div>
         </div>
         <SectionCard title="Complete the day" eyebrow={snapshot?.greeting ?? 'Command'}>
@@ -214,11 +219,12 @@ export function TodayPage() {
                 </p>
               </div>
             </div>
-            <img
+            <MediaFrame
               src={todayCoverMedia.imageUrl}
               alt={todayCoverMedia.alt}
-              className="mt-4 h-28 w-full rounded-[20px] object-cover md:h-36"
-              style={{ objectPosition: todayCoverMedia.objectPosition }}
+              wrapperClassName="mt-4 h-28 w-full rounded-[20px] md:h-36"
+              imageClassName="h-full w-full object-cover"
+              imageStyle={{ objectPosition: todayCoverMedia.objectPosition }}
             />
           </Card>
         </SectionCard>

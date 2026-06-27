@@ -10,7 +10,7 @@ import {
   X
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { Card, SectionCard, StateCard } from '../components/ui';
+import { Card, MediaFrame, SectionCard, StateCard } from '../components/ui';
 import { getPlanDayByDate, markPlanDayStatusByDate, shiftPlanForward } from '../services/planService';
 import {
   durationSecondsToPace,
@@ -429,11 +429,12 @@ export function WorkoutPage() {
                 {snapshot.exercises.length} exercises · {snapshot.planConfig?.estimatedDurationMinutes ?? 60} min
               </p>
             </div>
-            <img
+            <MediaFrame
               src={dayMedia.imageUrl}
               alt={dayMedia.alt}
-              className="h-28 w-full rounded-[20px] object-cover md:h-36"
-              style={{ objectPosition: dayMedia.objectPosition }}
+              wrapperClassName="h-28 w-full rounded-[20px] md:h-36"
+              imageClassName="h-full w-full object-cover"
+              imageStyle={{ objectPosition: dayMedia.objectPosition }}
             />
             <button
               type="button"
@@ -724,15 +725,11 @@ export function WorkoutPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-3">
-                      <img
+                      <MediaFrame
                         src={resolveExerciseImageUrl(exercise.mediaThumbnailUrl)}
                         alt={exercise.mediaAlt}
-                        loading="lazy"
-                        onError={(event) => {
-                          event.currentTarget.onerror = null;
-                          event.currentTarget.src = getExerciseDemoPlaceholder().imageUrl;
-                        }}
-                        className="h-12 w-12 rounded-xl object-cover"
+                        wrapperClassName="h-12 w-12 rounded-xl"
+                        imageClassName="h-full w-full object-cover"
                       />
                       <div className="min-w-0">
                         <p className="font-semibold text-teal">{index + 1}. {exercise.exerciseName}</p>
@@ -771,12 +768,14 @@ export function WorkoutPage() {
                 Demo image not available yet.
               </div>
             ) : (
-              <img
-              src={resolveExerciseImageUrl(currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? null)}
-              alt={currentExercise.mediaAlt}
-              className="max-h-[60vh] w-full rounded-[24px] border border-line object-contain sm:max-h-[68vh]"
-              onError={() => setDemoImageFailed(true)}
-              />
+              <div className="overflow-hidden rounded-[24px] border border-line bg-card p-3 sm:p-4">
+                <img
+                  src={resolveExerciseImageUrl(currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? null)}
+                  alt={currentExercise.mediaAlt}
+                  className="mx-auto block h-auto max-h-[60vh] max-w-full object-contain sm:max-h-[68vh]"
+                  onError={() => setDemoImageFailed(true)}
+                />
+              </div>
             )}
             <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
             <CoachRow label="Main cue" value={currentExercise.mainCue} />

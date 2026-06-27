@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { ArrowRightLeft, CalendarDays, Check, MoreHorizontal, Play, RotateCcw, Shuffle, SkipForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { SectionCard, Pill, StateCard } from '../components/ui';
+import { MediaFrame, Pill, SectionCard, StateCard } from '../components/ui';
 import { getDayCoverMedia } from '../data/mediaManifest';
 import {
   getPlanWeekSnapshot,
@@ -262,12 +262,12 @@ function PlanDayCard({
           <p className="text-2xl font-semibold text-teal">{day.name}</p>
           <p className="text-sm leading-6 text-muted">{day.focus}</p>
           <p className="text-sm font-medium text-teal">Estimated duration: {day.durationMinutes} minutes</p>
-          <img
+          <MediaFrame
             src={dayMedia.imageUrl}
             alt={dayMedia.alt}
-            loading="lazy"
-            className="mt-3 h-28 w-full max-w-sm rounded-[20px] object-cover md:h-32"
-            style={{ objectPosition: dayMedia.objectPosition }}
+            wrapperClassName="mt-3 h-28 w-full max-w-sm rounded-[20px] md:h-32"
+            imageClassName="h-full w-full object-cover"
+            imageStyle={{ objectPosition: dayMedia.objectPosition }}
           />
         </div>
 

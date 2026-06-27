@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
+import { useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
 
 export function PageHeader({
   eyebrow,
@@ -178,6 +178,61 @@ export function StateCard({
     <div className={`rounded-[24px] border px-4 py-4 ${palette}`}>
       <p className="text-sm font-semibold">{title}</p>
       <p className="mt-2 text-sm leading-6 opacity-80">{message}</p>
+    </div>
+  );
+}
+
+export function MediaFrame({
+  src,
+  alt,
+  wrapperClassName = '',
+  imageClassName = '',
+  imageStyle,
+  loading = 'lazy',
+  tone = 'dark'
+}: {
+  src: string | null | undefined;
+  alt: string;
+  wrapperClassName?: string;
+  imageClassName?: string;
+  imageStyle?: CSSProperties;
+  loading?: 'lazy' | 'eager';
+  tone?: 'dark' | 'light';
+}) {
+  const [failed, setFailed] = useState(!src);
+
+  useEffect(() => {
+    setFailed(!src);
+  }, [src]);
+
+  const fallbackClassName =
+    tone === 'dark'
+      ? 'border-white/10 bg-teal/96 text-white/78'
+      : 'border-line bg-field text-muted';
+
+  return (
+    <div className={`relative overflow-hidden ${wrapperClassName}`.trim()}>
+      {!failed && src ? (
+        <img
+          src={src}
+          alt={alt}
+          loading={loading}
+          className={imageClassName}
+          style={imageStyle}
+          onError={() => setFailed(true)}
+        />
+      ) : null}
+      {failed ? (
+        <div className={`absolute inset-0 flex h-full w-full items-end justify-between border p-4 ${fallbackClassName}`}>
+          <div className="space-y-2">
+            <div className="h-2.5 w-2.5 rounded-full bg-gold" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em]">Fitness Desk</p>
+          </div>
+          <div className="rounded-full border border-current/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] opacity-80">
+            Media ready
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

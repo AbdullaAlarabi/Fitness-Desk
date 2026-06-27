@@ -1,5 +1,6 @@
 import { format, subDays } from 'date-fns';
 import { profile } from '../data/seed';
+import { getAppNow } from '../lib/appClock';
 import { emitDashboardRefresh } from '../lib/dashboardEvents';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
@@ -188,7 +189,7 @@ function applyRangeFilter(checkins: BodyCheckinRow[], range: BodyRangeFilter) {
   if (range === 'All') return checkins;
 
   const days = range === '7D' ? 7 : range === '30D' ? 30 : 90;
-  const cutoff = format(subDays(new Date(), days - 1), 'yyyy-MM-dd');
+  const cutoff = format(subDays(getAppNow(), days - 1), 'yyyy-MM-dd');
   return checkins.filter((checkin) => checkin.checkin_date >= cutoff);
 }
 

@@ -1,4 +1,7 @@
-import { addDays, format, startOfMonth, startOfWeek } from 'date-fns';
+import { addDays, format, startOfMonth } from 'date-fns';
+import { intakeSchedule } from '../data/intakeSchedule';
+import { getTrainingCycleStart } from '../data/workout-plan';
+import { getAppNow } from '../lib/appClock';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
 import type { BodyCheckinRow, IntakeItemRow, IntakeLogRow, ScheduledWorkoutRow, WorkoutSessionRow } from '../types/database';
@@ -25,9 +28,9 @@ export type ProgressSummary = {
   runningSnapshot: RunningProgressSnapshot;
 };
 
-export async function getProgressDashboardSummary(now = new Date()): Promise<ProgressSummary> {
+export async function getProgressDashboardSummary(now = getAppNow()): Promise<ProgressSummary> {
   const client = getSupabaseClient();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekStart = getTrainingCycleStart(now);
   const weekEnd = addDays(weekStart, 6);
   const monthStart = startOfMonth(now);
   const todayIso = format(now, 'yyyy-MM-dd');
@@ -125,7 +128,7 @@ function calculateIntakeAdherencePercent(
   weekStartIso: string,
   weekEndIso: string
 ) {
-  const activeItems = intakeItems.length;
+  const activeItems = intakeItems.length || intakeSchedule.length;
   if (activeItems === 0) return 0;
 
   const daysInRange = enumerateDates(weekStartIso, weekEndIso);
@@ -154,7 +157,7 @@ function buildWeeklyBars(
   monthStart: Date
 ) {
   return Array.from({ length: 4 }, (_, index) => {
-    const weekStart = addDays(startOfWeek(monthStart, { weekStartsOn: 1 }), index * 7);
+    const weekStart = addDays(getTrainingCycleStart(monthStart), index * 7);
     const weekEnd = addDays(weekStart, 6);
     const weekStartIso = format(weekStart, 'yyyy-MM-dd');
     const weekEndIso = format(weekEnd, 'yyyy-MM-dd');

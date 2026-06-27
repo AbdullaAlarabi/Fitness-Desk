@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import {
+  ArrowLeft,
   CheckCircle2,
   ChevronRight,
   Loader2,
   Play,
-  SkipForward,
   TimerReset,
   X
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { Card, MediaFrame, SectionCard, StateCard } from '../components/ui';
-import { getPlanDayByDate, markPlanDayStatusByDate, shiftPlanForward } from '../services/planService';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Card, LoadingSkeleton, MediaFrame, MissionCard, SectionCard, StateCard, StatusTile } from '../components/ui';
+import { markPlanDayStatusByDate } from '../services/planService';
 import {
   durationSecondsToPace,
   durationSecondsToSpeedKmh,
@@ -33,10 +33,12 @@ import {
   type WorkoutExerciseStep,
   type WorkoutModeSnapshot
 } from '../services/workoutSessionMode';
+import { useFitnessDeskState } from '../state/fitnessDeskState';
 
 export function WorkoutPage() {
+  const { state, refresh } = useFitnessDeskState();
   const [searchParams] = useSearchParams();
-  const dateIso = searchParams.get('date') ?? format(new Date(), 'yyyy-MM-dd');
+  const dateIso = searchParams.get('date') ?? state.todayIso;
   const [snapshot, setSnapshot] = useState<WorkoutModeSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,6 +57,7 @@ export function WorkoutPage() {
   const [showDemo, setShowDemo] = useState(false);
   const [showFullPlan, setShowFullPlan] = useState(false);
   const [demoImageFailed, setDemoImageFailed] = useState(false);
+  const [modalReturnFocusEl, setModalReturnFocusEl] = useState<HTMLElement | null>(null);
   const [runType, setRunType] = useState<RunningSessionType>('controlled_3_2km');
   const [distanceInput, setDistanceInput] = useState(RUN_TARGET_DISTANCE_KM.toString());
   const [durationInput, setDurationInput] = useState('1200');
@@ -89,12 +92,17 @@ export function WorkoutPage() {
   );
   const totalSets = snapshot?.exercises.reduce((sum, exercise) => sum + exercise.setCount, 0) ?? 0;
   const completedSetCount = snapshot?.exercises.reduce((sum, exercise) => sum + getLoggedSetCount(exercise), 0) ?? 0;
-  const previewExercises = useMemo(
-    () => snapshot?.exercises.slice(0, 5).map((exercise) => exercise.exerciseName) ?? [],
-    [snapshot?.exercises]
-  );
   const dayMedia = getDayCoverMedia(snapshot?.planConfig?.dayNumber ?? 1);
   const isActiveGymWorkout = Boolean(snapshot?.session && snapshot.sessionType === 'gym' && !workoutComplete);
+  const requiresWeight = currentExercise ? !isBodyweightExercise(currentExercise) : true;
+  const weightValue = Number(weightInput);
+  const repsValue = Number(repsInput);
+  const canSaveSet = Boolean(
+    currentExercise &&
+      Number.isFinite(repsValue) &&
+      repsValue > 0 &&
+      (requiresWeight ? Number.isFinite(weightValue) && weightValue >= 0 : true)
+  );
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -137,6 +145,7 @@ export function WorkoutPage() {
     try {
       await ensureWorkoutSession(dateIso);
       await loadSnapshot(exerciseIndex);
+      await refresh();
     } catch (sessionError) {
       setError(sessionError instanceof Error ? sessionError.message : 'Could not start the workout.');
     } finally {
@@ -146,10 +155,10 @@ export function WorkoutPage() {
 
   async function handleSaveSet() {
     if (!snapshot?.session || !currentExercise) return;
-    const weight = Number(weightInput);
+    const weight = weightInput.trim() === '' ? null : Number(weightInput);
     const reps = Number(repsInput);
 
-    if (!Number.isFinite(weight) || weight < 0) {
+    if (requiresWeight && (!Number.isFinite(weight) || (weight ?? 0) < 0)) {
       setError('Enter a valid weight in kg.');
       return;
     }
@@ -170,7 +179,7 @@ export function WorkoutPage() {
         exercise: currentExercise,
         setNumber: currentSetNumber,
         reps,
-        weightKg: weight,
+        weightKg: requiresWeight ? weight : weight ?? null,
         notes: null,
         restSeconds: currentExercise.restSeconds
       });
@@ -180,6 +189,7 @@ export function WorkoutPage() {
       setRestActive(true);
       setSuccess('Set saved. Rest started.');
       await loadSnapshot();
+      await refresh();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save the set.');
     } finally {
@@ -202,6 +212,7 @@ export function WorkoutPage() {
       });
       setSuccess('Workout complete.');
       await loadSnapshot();
+      await refresh();
     } catch (finishError) {
       setError(finishError instanceof Error ? finishError.message : 'Could not finish the workout.');
     } finally {
@@ -251,6 +262,7 @@ export function WorkoutPage() {
       });
       setSuccess('Run saved.');
       await loadSnapshot();
+      await refresh();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save the run.');
     } finally {
@@ -266,45 +278,9 @@ export function WorkoutPage() {
       await markPlanDayStatusByDate(dateIso, 'completed');
       setSuccess('Walk marked complete.');
       await loadSnapshot();
+      await refresh();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : 'Could not complete the walk.');
-    } finally {
-      setFinishSaving(false);
-    }
-  }
-
-  async function handleSkipWorkout() {
-    setFinishSaving(true);
-    setError('');
-    setSuccess('');
-    try {
-      await markPlanDayStatusByDate(dateIso, 'skipped');
-      setSuccess('Workout skipped.');
-      await loadSnapshot();
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'Could not skip the workout.');
-    } finally {
-      setFinishSaving(false);
-    }
-  }
-
-  async function handleShiftWorkout() {
-    setFinishSaving(true);
-    setError('');
-    setSuccess('');
-    try {
-      const day = await getPlanDayByDate(dateIso);
-      if (!day) throw new Error('Workout day not found.');
-      await markPlanDayStatusByDate(dateIso, 'skipped');
-      await shiftPlanForward({
-        sourceDateIso: dateIso,
-        shiftRemaining: false,
-        useRecoveryDays: false
-      });
-      setSuccess('Workout shifted forward.');
-      await loadSnapshot();
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'Could not shift the workout.');
     } finally {
       setFinishSaving(false);
     }
@@ -351,6 +327,14 @@ export function WorkoutPage() {
     setSuccess('');
   }
 
+  function rememberTriggerAnd(openAction: () => void) {
+    const active = typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    setModalReturnFocusEl(active);
+    openAction();
+  }
+
   return (
     <div className="space-y-6">
       {isActiveGymWorkout ? (
@@ -364,30 +348,30 @@ export function WorkoutPage() {
                 Exercise {exerciseIndex + 1}/{snapshot?.exercises.length ?? 0} · {completedSetCount}/{totalSets} sets
               </p>
             </div>
-            <button type="button" onClick={() => void loadSnapshot()} className="fd-button-secondary min-h-10 px-3 text-xs">
-              Refresh
-            </button>
           </div>
         </div>
       ) : (
         <SectionCard
-          title="Workout player"
+          title="Train"
           eyebrow={format(new Date(`${dateIso}T12:00:00`), 'EEEE, MMMM d')}
           action={
-            <button type="button" onClick={() => void loadSnapshot()} className="fd-button-secondary min-h-11 px-4">
-              Refresh
-            </button>
+            dateIso !== state.todayIso ? (
+              <Link to="/plan" className="fd-button-secondary min-h-10 px-4">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Plan
+              </Link>
+            ) : null
           }
         >
           <div className="grid gap-3 sm:grid-cols-3">
-            <MiniMeta label="Workout" value={snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? 'Session'} />
+            <MiniMeta label="Session" value={snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? 'Session'} />
             <MiniMeta
-              label="Focus"
-              value={snapshot?.planConfig?.focus ?? snapshot?.template?.description ?? 'Training focus'}
+              label="Current session"
+              value={`Day ${snapshot?.planConfig?.dayNumber ?? state.currentSession.dayNumber}`}
             />
             <MiniMeta
-              label="Duration"
-              value={`${snapshot?.planConfig?.estimatedDurationMinutes ?? 60} min`}
+              label="Status"
+              value={formatWorkoutStatus(snapshot?.scheduledWorkout?.status ?? state.currentSession.status)}
             />
           </div>
         </SectionCard>
@@ -395,7 +379,7 @@ export function WorkoutPage() {
 
       {error ? <ErrorBanner message={error} /> : null}
       {success ? <SuccessBanner message={success} /> : null}
-      {loading && !snapshot ? <StateCard title="Loading workout" message="Fetching the scheduled session." /> : null}
+      {loading && !snapshot ? <LoadingSkeleton lines={4} /> : null}
 
       {snapshot?.sessionType === 'rest' ? (
         <SectionCard title="Rest / Walking" eyebrow="Recovery day">
@@ -420,57 +404,143 @@ export function WorkoutPage() {
       ) : null}
 
       {snapshot && snapshot.sessionType === 'gym' && !snapshot.session ? (
-        <SectionCard title={snapshot.planConfig?.title ?? 'Workout'} eyebrow="Ready to start">
-          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
-            <div>
-              <p className="text-2xl font-semibold text-teal">{snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title}</p>
-              <p className="mt-2 text-sm text-muted">{snapshot.planConfig?.focus}</p>
-              <p className="mt-3 text-sm font-medium text-teal">
-                {snapshot.exercises.length} exercises · {snapshot.planConfig?.estimatedDurationMinutes ?? 60} min
-              </p>
-            </div>
-            <MediaFrame
-              src={dayMedia.imageUrl}
-              alt={dayMedia.alt}
-              wrapperClassName="h-28 w-full rounded-[20px] md:h-36"
-              imageClassName="h-full w-full object-cover"
-              imageStyle={{ objectPosition: dayMedia.objectPosition }}
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_320px]">
+          <div className="space-y-5">
+            <MissionCard
+              eyebrow="Ready to train"
+              title={snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title ?? 'Workout'}
+              subtitle={snapshot.planConfig?.focus ?? 'Structured day'}
+              description={getStartDescription(snapshot.planConfig?.title ?? null)}
+              metadata={[
+                { label: 'Duration', value: `${snapshot.planConfig?.estimatedDurationMinutes ?? 60} min` },
+                { label: 'Type', value: 'Structured day' },
+                { label: 'Exercises', value: `${snapshot.exercises.length}` }
+              ]}
+              image={{ src: dayMedia.imageUrl, alt: dayMedia.alt, objectPosition: dayMedia.objectPosition }}
+              primaryAction={
+                <button
+                  type="button"
+                  onClick={() => void startWorkout()}
+                  disabled={sessionLoading}
+                  className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 disabled:opacity-60 sm:w-auto"
+                >
+                  {sessionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                  Start Session
+                </button>
+              }
+              secondaryAction={
+                <button
+                  type="button"
+                  onClick={() => setShowFullPlan(true)}
+                  className="fd-button-secondary min-h-12 w-full justify-center gap-2 px-5 sm:w-auto"
+                >
+                  View Exercise List
+                </button>
+              }
             />
-            <button
-              type="button"
-              onClick={() => void startWorkout()}
-              disabled={sessionLoading}
-              className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 disabled:opacity-60"
-            >
-              {sessionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Start Workout
-            </button>
-            <div className="rounded-2xl border border-line bg-card px-4 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Preview</p>
-              <p className="mt-2 text-sm leading-6 text-teal">{previewExercises.join(' → ')}</p>
-            </div>
+
+            <SectionCard title="Exercise preview" eyebrow="In order">
+              <div className="space-y-3">
+                {snapshot.exercises.map((exercise, index) => (
+                  <Card key={exercise.key} className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="fd-label">{`Exercise ${index + 1}`}</p>
+                        <p className="card-title mt-2 text-teal">{exercise.exerciseName}</p>
+                        <p className="helper-text mt-2 text-muted">
+                          {exercise.targetMuscles ?? exercise.exerciseGroup ?? 'Target muscles set in workout plan'}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="card-title text-teal">
+                          {exercise.setCount} × {formatRepRange(exercise.repRangeMin, exercise.repRangeMax)}
+                        </p>
+                        <p className="helper-text mt-2 text-muted">Rest {exercise.restSeconds}s</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExerciseIndex(index);
+                          rememberTriggerAnd(() => setShowDemo(true));
+                        }}
+                        aria-label={`Open demo for ${exercise.exerciseName}`}
+                        className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm"
+                      >
+                        Demo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExerciseIndex(index);
+                          rememberTriggerAnd(() => setShowCoachNotes(true));
+                        }}
+                        aria-label={`Open details for ${exercise.exerciseName}`}
+                        className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm"
+                      >
+                        Details
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </SectionCard>
           </div>
-        </SectionCard>
+
+          <div className="space-y-4">
+            <SectionCard title="Session checklist" eyebrow="Preparation">
+              <div className="grid gap-3">
+                <StatusTile label="Equipment" value="Machines / gym-based" />
+                <StatusTile label="Sets" value={`${totalSets} total sets`} />
+                <StatusTile label="Target" value="Controlled reps" helper="Leave 1-2 reps in reserve." />
+                <StatusTile label="Post-workout" value="Protein + Creatine" />
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Today context" eyebrow="Before you start">
+              <div className="grid gap-3">
+                <StatusTile label="Training" value={formatWorkoutStatus(snapshot.scheduledWorkout?.status ?? state.currentSession.status)} />
+                <StatusTile label="Intake" value={`${getIntakeHandledCount(state.intakeGroups)}/${getIntakePlannedCount(state.intakeGroups)} handled`} />
+                <StatusTile label="Weight" value={state.body.dailyWeightKg !== null ? `${state.body.dailyWeightKg} kg` : 'Not logged yet'} />
+              </div>
+            </SectionCard>
+          </div>
+        </section>
       ) : null}
 
       {snapshot && snapshot.sessionType === 'run' && !snapshot.session ? (
-        <SectionCard title={snapshot.planConfig?.title ?? 'Run session'} eyebrow="Ready to start">
-          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
-            <div>
-              <p className="text-2xl font-semibold text-teal">{snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title}</p>
-              <p className="mt-2 text-sm text-muted">{snapshot.planConfig?.focus}</p>
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_320px]">
+          <MissionCard
+            eyebrow="Ready to train"
+            title={snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title ?? 'Run session'}
+            subtitle={snapshot.planConfig?.focus}
+            description={getStartDescription(snapshot.planConfig?.title ?? null)}
+            metadata={[
+              { label: 'Duration', value: `${snapshot.planConfig?.estimatedDurationMinutes ?? 60} min` },
+              { label: 'Type', value: 'Run day' }
+            ]}
+            image={{ src: dayMedia.imageUrl, alt: dayMedia.alt, objectPosition: dayMedia.objectPosition }}
+            primaryAction={
+              <button
+                type="button"
+                onClick={() => void startWorkout()}
+                disabled={sessionLoading}
+                className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 disabled:opacity-60 sm:w-auto"
+              >
+                {sessionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                Start Session
+              </button>
+            }
+          />
+          <SectionCard title="Session checklist" eyebrow="Preparation">
+            <div className="grid gap-3">
+              <StatusTile label="Run type" value="Controlled pacing" />
+              <StatusTile label="Target" value="Finish clean" helper="Track pace and effort." />
+              <StatusTile label="Post-workout" value="Protein + Creatine" />
             </div>
-            <button
-              type="button"
-              onClick={() => void startWorkout()}
-              disabled={sessionLoading}
-              className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 disabled:opacity-60"
-            >
-              {sessionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Start Workout
-            </button>
-          </div>
-        </SectionCard>
+          </SectionCard>
+        </section>
       ) : null}
 
       {snapshot && snapshot.sessionType === 'run' && snapshot.session ? (
@@ -534,105 +604,174 @@ export function WorkoutPage() {
       ) : null}
 
       {snapshot && snapshot.sessionType === 'gym' && snapshot.session && !workoutComplete && currentExercise ? (
-        <section className="space-y-4 pb-24 lg:pb-0">
-          <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player">
-            <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-4 sm:p-5 lg:space-y-5">
-              <div>
-                <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
-                <p className="mt-2 text-sm text-muted">
-                  <span className="lg:hidden">
-                    {currentExercise.setCount} x {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
-                  </span>
-                  <span className="hidden lg:inline">
-                    {currentExercise.setCount} sets · {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} reps · Rest {currentExercise.restSeconds}s
-                  </span>
+        <section className="space-y-4 pb-28 lg:pb-0">
+          <div className="sticky top-3 z-20 rounded-2xl border border-line bg-white px-4 py-3 shadow-card lg:top-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-teal">
+                  {snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title ?? 'Workout'}
+                </p>
+                <p className="mt-1 text-xs font-medium text-muted">
+                  Exercise {exerciseIndex + 1} of {snapshot.exercises.length} · In progress
+                  {snapshot.session?.created_at ? ` · ${calculateDurationMinutes(snapshot.session.created_at)} min` : ''}
                 </p>
               </div>
-
-              <div className="rounded-2xl border border-line bg-card px-4 py-4 hidden lg:block">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Current set</p>
-                <p className="mt-2 text-xl font-semibold text-teal">
-                  Set {currentSetNumber} of {currentExercise.setCount}
-                </p>
+              <div className="shrink-0 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold text-teal">
+                {completedSetCount}/{totalSets} sets
               </div>
-              <p className="text-base font-semibold text-teal lg:hidden">
-                Set {currentSetNumber} of {currentExercise.setCount}
-              </p>
-
-              {completedSets < currentExercise.setCount ? (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <InputBlock label="Weight kg">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        value={weightInput}
-                        onChange={(event) => setWeightInput(event.target.value)}
-                        className="fd-input"
-                      />
-                    </InputBlock>
-                    <InputBlock label="Reps">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={repsInput}
-                        onChange={(event) => setRepsInput(event.target.value)}
-                        className="fd-input"
-                      />
-                    </InputBlock>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => void handleSaveSet()}
-                    disabled={setSaving}
-                    className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 text-base disabled:opacity-60 hidden lg:inline-flex"
-                  >
-                    {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    Save Set
-                  </button>
-                </>
-              ) : null}
-
-              {restActive ? (
-                <div className="rounded-2xl border border-line bg-card px-4 py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Rest timer</p>
-                  <p className="mt-2 text-2xl font-semibold text-teal">{formatSeconds(restRemaining)}</p>
-                  <div className="mt-4 flex gap-2">
-                    <button type="button" onClick={() => setRestActive(false)} className="fd-button-secondary min-h-11 px-4">
-                      <TimerReset className="h-4 w-4" />
-                      Skip Rest
-                    </button>
-                    <button type="button" onClick={handleNextSet} className="fd-button-secondary min-h-11 px-4">
-                      <ChevronRight className="h-4 w-4" />
-                      Next Set
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="flex flex-wrap gap-2">
-                <SmallButton onClick={() => setShowCoachNotes(true)}>Coach notes</SmallButton>
-                <SmallButton onClick={() => setShowDemo(true)}>Demo</SmallButton>
-                <SmallButton onClick={() => setShowFullPlan(true)}>Full plan</SmallButton>
-              </div>
-
-              <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal lg:bg-card lg:border-line border-none bg-transparent px-0 py-0 lg:px-4 lg:py-3">
-                Clean reps · 1-2 reps in reserve · follow rest timer
-              </div>
-              <button type="button" onClick={() => setShowRules(true)} className="text-xs font-semibold text-muted hidden lg:inline">
-                View rules
-              </button>
             </div>
-          </SectionCard>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player">
+              <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-4 sm:p-5 lg:space-y-5">
+                <div>
+                  <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
+                  <p className="mt-2 text-sm text-muted">{currentExercise.targetMuscles ?? currentExercise.exerciseGroup ?? 'Target muscles set in workout plan'}</p>
+                  <p className="mt-2 text-sm text-muted">
+                    <span className="lg:hidden">
+                      {currentExercise.setCount} × {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
+                    </span>
+                    <span className="hidden lg:inline">
+                      {currentExercise.setCount} sets · {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} reps · Rest {currentExercise.restSeconds}s
+                    </span>
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-line bg-card px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Current set</p>
+                  <p className="mt-2 text-xl font-semibold text-teal">
+                    Set {currentSetNumber} of {currentExercise.setCount}
+                  </p>
+                  {currentExercise.mainCue ? <p className="mt-2 text-sm text-muted">{currentExercise.mainCue}</p> : null}
+                </div>
+
+                {completedSets < currentExercise.setCount ? (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <InputBlock label={requiresWeight ? 'Weight kg' : 'Weight kg (optional)'}>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          value={weightInput}
+                          onChange={(event) => setWeightInput(event.target.value)}
+                          className="fd-input"
+                          inputMode="decimal"
+                        />
+                      </InputBlock>
+                      <InputBlock label="Reps">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={repsInput}
+                          onChange={(event) => setRepsInput(event.target.value)}
+                          className="fd-input"
+                          inputMode="numeric"
+                        />
+                      </InputBlock>
+                    </div>
+
+                    {!canSaveSet ? (
+                      <p className="text-sm text-muted">
+                        {requiresWeight ? 'Enter weight and reps to save this set.' : 'Enter reps to save this set.'}
+                      </p>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveSet()}
+                      disabled={setSaving || !canSaveSet}
+                      className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5 text-base disabled:opacity-60 hidden lg:inline-flex"
+                    >
+                      {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      Save Set
+                    </button>
+                  </>
+                ) : null}
+
+                {restActive ? (
+                  <div className="rounded-2xl border border-line bg-card px-4 py-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Rest timer</p>
+                    <p className="mt-2 text-2xl font-semibold text-teal">{formatSeconds(restRemaining)}</p>
+                    {restRemaining === 0 ? <p className="mt-2 text-sm font-semibold text-teal">Rest complete</p> : null}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => setRestActive(false)} className="fd-button-secondary min-h-11 px-4">
+                        <TimerReset className="h-4 w-4" />
+                        Skip Rest
+                      </button>
+                      <button type="button" onClick={() => setRestRemaining((current) => current + 30)} className="fd-button-secondary min-h-11 px-4">
+                        +30 sec
+                      </button>
+                      <button
+                        type="button"
+                        onClick={completedSets >= currentExercise.setCount ? (exerciseIndex < snapshot.exercises.length - 1 ? handleNextExercise : () => setRestActive(false)) : handleNextSet}
+                        className="fd-button-secondary min-h-11 px-4"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                        {completedSets >= currentExercise.setCount
+                          ? exerciseIndex < snapshot.exercises.length - 1
+                            ? 'Next Exercise'
+                            : 'Finish Workout'
+                          : 'Next Set'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2">
+                  <SmallButton onClick={() => rememberTriggerAnd(() => setShowCoachNotes(true))} ariaLabel={`Open details for ${currentExercise.exerciseName}`}>Coach notes</SmallButton>
+                  <SmallButton onClick={() => rememberTriggerAnd(() => setShowDemo(true))} ariaLabel={`Open demo for ${currentExercise.exerciseName}`}>Demo</SmallButton>
+                  <SmallButton onClick={() => setShowFullPlan(true)}>Full plan</SmallButton>
+                </div>
+
+                <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal lg:bg-card lg:border-line border-none bg-transparent px-0 py-0 lg:px-4 lg:py-3">
+                  Clean reps · 1-2 reps in reserve · follow rest timer
+                </div>
+                <button type="button" onClick={() => setShowRules(true)} className="text-xs font-semibold text-muted hidden lg:inline">
+                  View rules
+                </button>
+              </div>
+            </SectionCard>
+
+            <div className="space-y-4">
+              <Card className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Saved sets</p>
+                {currentExercise.setLogs.length > 0 ? (
+                  <div className="space-y-2">
+                    {currentExercise.setLogs.map((setLog) => (
+                      <div key={setLog.id} className="flex items-center justify-between text-sm text-teal">
+                        <span>Set {setLog.set_number}</span>
+                        <span>
+                          {typeof setLog.weight_value === 'number' ? `${setLog.weight_value} kg × ` : ''}
+                          {setLog.reps ?? 0}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted">No saved sets yet.</p>
+                )}
+              </Card>
+
+              <Card className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Session progress</p>
+                <div className="grid gap-3">
+                  <MiniMeta label="Exercise" value={`${exerciseIndex + 1} / ${snapshot.exercises.length}`} />
+                  <MiniMeta label="Sets" value={`${completedSetCount} / ${totalSets}`} />
+                  <MiniMeta label="Status" value="In Progress" />
+                </div>
+              </Card>
+            </div>
+          </div>
+
           {completedSets < currentExercise.setCount ? (
             <div className="fixed inset-x-0 bottom-[calc(6.4rem+env(safe-area-inset-bottom))] z-30 px-4 lg:hidden">
               <button
                 type="button"
                 onClick={() => void handleSaveSet()}
-                disabled={setSaving}
+                disabled={setSaving || !canSaveSet}
                 className="fd-button-accent min-h-12 w-full justify-center gap-2 border border-line/70 px-5 text-base shadow-card disabled:opacity-60"
               >
                 {setSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -657,19 +796,40 @@ export function WorkoutPage() {
                   <ChevronRight className="h-4 w-4" />
                   Next Exercise
                 </button>
-              ) : null}
+              ) : (
+                <button type="button" onClick={() => setRestActive(false)} className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Finish Workout
+                </button>
+              )}
             </Card>
           ) : null}
         </section>
       ) : null}
 
       {snapshot && snapshot.sessionType === 'gym' && snapshot.session && workoutComplete ? (
-        <SectionCard title="Workout complete" eyebrow="Finish workout">
+        <SectionCard title="Session completed" eyebrow="Finish workout">
           <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
             <div className="grid gap-3 sm:grid-cols-2">
+              <MiniMeta label="Session" value={snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title ?? 'Workout'} />
               <MiniMeta label="Exercises completed" value={`${snapshot.exercises.length} / ${snapshot.exercises.length}`} />
               <MiniMeta label="Sets completed" value={`${completedSetCount} / ${totalSets}`} />
+              <MiniMeta label="Total volume" value={`${calculateTotalVolume(snapshot.exercises)} kg`} />
+              <MiniMeta label="Duration" value={`${calculateDurationMinutes(snapshot.session.created_at)} min`} />
             </div>
+            <Card className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Progression guidance</p>
+              <div className="space-y-2">
+                {getWorkoutProgressionDetails(snapshot.exercises).map((message) => (
+                  <p key={message} className="text-sm text-teal">{message}</p>
+                ))}
+              </div>
+            </Card>
+            <Card className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Post-workout intake</p>
+              <p className="text-sm text-teal">Protein</p>
+              <p className="text-sm text-teal">Creatine</p>
+            </Card>
             <InputBlock label="Optional notes">
               <textarea
                 value={sessionNotes}
@@ -687,23 +847,6 @@ export function WorkoutPage() {
               >
                 {finishSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Finish Workout
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleSkipWorkout()}
-                disabled={finishSaving}
-                className="fd-button-secondary min-h-12 px-5 disabled:opacity-60"
-              >
-                <SkipForward className="h-4 w-4" />
-                Skip
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleShiftWorkout()}
-                disabled={finishSaving}
-                className="fd-button-secondary min-h-12 px-5 disabled:opacity-60"
-              >
-                Shift
               </button>
             </div>
           </div>
@@ -750,8 +893,18 @@ export function WorkoutPage() {
       ) : null}
 
       {showCoachNotes && currentExercise ? (
-        <BottomSheet title="Coach notes" onClose={() => setShowCoachNotes(false)}>
+        <BottomSheet
+          title={`${currentExercise.exerciseName} Details`}
+          onClose={() => setShowCoachNotes(false)}
+          returnFocusEl={modalReturnFocusEl}
+        >
           <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniMeta label="Target" value={currentExercise.targetMuscles ?? currentExercise.exerciseGroup ?? 'Training focus'} />
+              <MiniMeta label="Prescription" value={`${currentExercise.setCount} × ${formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)}`} />
+              <MiniMeta label="Rest" value={`${currentExercise.restSeconds}s`} />
+              <MiniMeta label="Type" value={currentExercise.equipmentType ?? 'Machine / cable'} />
+            </div>
             <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
             <CoachRow label="Main cue" value={currentExercise.mainCue} />
             <CoachRow label="Common mistake" value={currentExercise.commonMistake} />
@@ -761,22 +914,35 @@ export function WorkoutPage() {
       ) : null}
 
       {showDemo && currentExercise ? (
-        <BottomSheet title="Demo" onClose={() => setShowDemo(false)}>
+        <BottomSheet
+          title={`${currentExercise.exerciseName} Demo`}
+          onClose={() => setShowDemo(false)}
+          returnFocusEl={modalReturnFocusEl}
+          maxWidthClassName="md:max-w-[960px]"
+        >
           <div className="space-y-4">
             {demoImageFailed ? (
               <div className="rounded-[24px] border border-line bg-card px-4 py-10 text-center text-sm text-muted">
                 Demo image not available yet.
               </div>
             ) : (
-              <div className="overflow-hidden rounded-[24px] border border-line bg-card p-3 sm:p-4">
+              <div className="rounded-[24px] border border-line bg-card p-3 sm:p-4">
                 <img
                   src={resolveExerciseImageUrl(currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? null)}
                   alt={currentExercise.mediaAlt}
-                  className="mx-auto block h-auto max-h-[60vh] max-w-full object-contain sm:max-h-[68vh]"
+                  className="mx-auto block h-auto max-h-[58vh] max-w-full object-contain md:max-h-[52vh]"
                   onError={() => setDemoImageFailed(true)}
                 />
               </div>
             )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniMeta label="Exercise" value={currentExercise.exerciseName} />
+              <MiniMeta label="Target" value={currentExercise.targetMuscles ?? currentExercise.exerciseGroup ?? 'Training focus'} />
+              <MiniMeta label="Sets" value={`${currentExercise.setCount}`} />
+              <MiniMeta label="Rep range" value={formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} />
+              <MiniMeta label="Rest" value={`${currentExercise.restSeconds}s`} />
+              <MiniMeta label="Type" value={currentExercise.equipmentType ?? 'Machine / cable'} />
+            </div>
             <CoachRow label="Setup cue" value={currentExercise.machineSetup} />
             <CoachRow label="Main cue" value={currentExercise.mainCue} />
           </div>
@@ -784,7 +950,7 @@ export function WorkoutPage() {
       ) : null}
 
       {showRules && snapshot ? (
-        <BottomSheet title="Session rules" onClose={() => setShowRules(false)}>
+        <BottomSheet title="Session rules" onClose={() => setShowRules(false)} returnFocusEl={modalReturnFocusEl}>
           <div className="space-y-3">
             {snapshot.workoutRules.map((rule) => (
               <div key={rule} className="rounded-2xl border border-line bg-card px-4 py-3 text-sm text-teal">
@@ -801,23 +967,94 @@ export function WorkoutPage() {
 function BottomSheet({
   title,
   onClose,
-  children
+  children,
+  returnFocusEl,
+  maxWidthClassName = 'md:max-w-[1040px]'
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  returnFocusEl?: HTMLElement | null;
+  maxWidthClassName?: string;
 }) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = 'workout-modal-title';
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const closeButton = panel.querySelector<HTMLButtonElement>('[data-modal-close="true"]');
+    closeButton?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusScope = panelRef.current;
+      if (!focusScope) return;
+
+      const focusable = Array.from(
+        focusScope.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => !element.hasAttribute('disabled'));
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      returnFocusEl?.focus();
+    };
+  }, [onClose, returnFocusEl]);
+
   return (
-    <div className="fixed inset-0 z-40 bg-black/30 px-4 pb-4 pt-20 sm:px-6">
-      <div className="mx-auto flex h-full max-w-xl flex-col justify-end">
-        <div className="rounded-[28px] border border-line bg-white shadow-card">
+    <div
+      className="fixed inset-0 z-50 flex items-end bg-black/40 pt-[max(env(safe-area-inset-top),1rem)] md:items-center md:justify-center md:px-6 md:py-6"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className={`flex h-[calc(100vh-env(safe-area-inset-top))] w-full flex-col md:h-auto md:max-h-[85vh] ${maxWidthClassName}`}>
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="flex h-full flex-col rounded-t-[28px] border border-line bg-white shadow-card md:h-auto md:rounded-[28px]"
+        >
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <p className="text-lg font-semibold text-teal">{title}</p>
-            <button type="button" onClick={onClose} className="rounded-2xl border border-line bg-card p-2 text-teal">
+            <p id={titleId} className="text-lg font-semibold text-teal">{title}</p>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={`Close ${title}`}
+              data-modal-close="true"
+              className="rounded-2xl border border-line bg-card p-2 text-teal"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="max-h-[70vh] overflow-y-auto p-5">{children}</div>
+          <div className="flex-1 overflow-y-auto p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] md:max-h-[calc(85vh-72px)]">{children}</div>
         </div>
       </div>
     </div>
@@ -833,9 +1070,17 @@ function MiniMeta({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SmallButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+function SmallButton({
+  children,
+  onClick,
+  ariaLabel
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  ariaLabel?: string;
+}) {
   return (
-    <button type="button" onClick={onClick} className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm">
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm">
       {children}
     </button>
   );
@@ -908,6 +1153,60 @@ function formatSeconds(seconds: number) {
 function calculateDurationMinutes(createdAt: string) {
   const elapsedMs = Date.now() - new Date(createdAt).getTime();
   return Math.max(1, Math.round(elapsedMs / 60000));
+}
+
+function calculateTotalVolume(exercises: WorkoutExerciseStep[]) {
+  return exercises.reduce(
+    (total, exercise) =>
+      total +
+      exercise.setLogs.reduce(
+        (setTotal, setLog) => setTotal + (setLog.weight_value ?? 0) * (setLog.reps ?? 0),
+        0
+      ),
+    0
+  );
+}
+
+function getWorkoutProgressionDetails(exercises: WorkoutExerciseStep[]) {
+  const recommendations = exercises.map((exercise) => getProgressionSuggestion(exercise)).filter(Boolean) as string[];
+  if (recommendations.length > 0) return recommendations;
+  return ['Keep weight next time. Build clean reps until all sets reach the top range.'];
+}
+
+function formatWorkoutStatus(status: string | null | undefined) {
+  if (status === 'ready') return 'Ready';
+  if (status === 'completed') return 'Completed';
+  if (status === 'in_progress') return 'In Progress';
+  if (status === 'planned') return 'Planned';
+  if (status === 'rest') return 'Rest';
+  if (!status) return 'Ready';
+  return status.replace(/_/g, ' ');
+}
+
+function getIntakeHandledCount(intakeGroups: Array<{ items: Array<{ todayLog?: { status?: string | null } | null }> }>) {
+  return intakeGroups.reduce(
+    (total, group) => total + group.items.filter((item) => item.todayLog?.status === 'taken' || item.todayLog?.status === 'skipped').length,
+    0
+  );
+}
+
+function getIntakePlannedCount(intakeGroups: Array<{ items: unknown[] }>) {
+  return intakeGroups.reduce((total, group) => total + group.items.length, 0);
+}
+
+function getStartDescription(title: string | null) {
+  if (!title) return 'Build the session. Log the work. Finish clean.';
+  if (title === 'Push') return 'Build the chest. Widen the frame. Leave 1-2 reps in reserve.';
+  if (title === 'Pull') return 'Build the V-shape. Pull with control. No swinging.';
+  if (title === 'Legs + Core + Run Intervals') return 'Run controlled. Train legs clean. No glute-heavy work today.';
+  if (title === 'Upper Shape') return 'Make the frame wider. Control every rep.';
+  if (title === '3.2 km Run + Arms/Core') return 'Run with discipline. Track pace. Finish clean.';
+  return 'Build the session. Log the work. Finish clean.';
+}
+
+function isBodyweightExercise(exercise: WorkoutExerciseStep) {
+  const normalized = exercise.exerciseName.toLowerCase();
+  return normalized.includes('plank') || normalized.includes('walking') || normalized.includes('captain chair');
 }
 
 function resolveExerciseImageUrl(value: string | null | undefined) {

@@ -141,7 +141,7 @@ export function SeedPage() {
           <div className="flex gap-3">
             <SecondaryButton onClick={() => void loadSummary()} className="inline-flex min-h-12 items-center justify-center gap-2 px-5">
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              Reload status
             </SecondaryButton>
             <AccentButton onClick={() => void runSeed()} disabled={running} className="inline-flex min-h-12 items-center justify-center gap-2 px-5 disabled:opacity-60">
               <DatabaseZap className="h-4 w-4" />

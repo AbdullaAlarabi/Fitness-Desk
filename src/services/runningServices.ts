@@ -1,4 +1,5 @@
 import { addWeeks, format } from 'date-fns';
+import { getAppNow } from '../lib/appClock';
 import { emitDashboardRefresh } from '../lib/dashboardEvents';
 import type { InsertRow, RunningSessionRow, UpdateRow } from '../types/database';
 import { buildMissingMigrationError, isMissingColumnError } from './shared';
@@ -128,7 +129,7 @@ export async function getRunningProgressSnapshot(): Promise<RunningProgressSnaps
       .reverse()
       .find((run) => run.run_type === 'time_trial_3_2km' || run.run_type === 'controlled_3_2km') ?? null;
 
-  const nextTestBase = latestBenchmark ? new Date(`${latestBenchmark.session_date}T12:00:00`) : new Date();
+  const nextTestBase = latestBenchmark ? new Date(`${latestBenchmark.session_date}T12:00:00`) : getAppNow();
   const nextTestDate = format(addWeeks(nextTestBase, 4), 'yyyy-MM-dd');
   const targetPaceSecondsPerKm = durationSecondsToPace(RUN_TARGET_DISTANCE_KM, RUN_TARGET_TIME_SECONDS);
   const currentPaceSecondsPerKm = durationSecondsToPace(RUN_TARGET_DISTANCE_KM, latestThreePointTwoKmSeconds);

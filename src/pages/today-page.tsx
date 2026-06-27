@@ -1,48 +1,35 @@
-import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
-import { ArrowRight, CheckCircle2, Circle, Dumbbell, Loader2, Moon, Play, Sun, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Circle, Dumbbell, Loader2, Moon, Play, Sun, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Card, MediaFrame, MetricCard, SectionCard, StateCard } from '../components/ui';
+import { ActionRow, Badge, Card, MetricInput, MissionCard, SectionCard, StatusTile } from '../components/ui';
 import { getDayCoverMedia, getTodayHeroMedia } from '../data/mediaManifest';
-import { getWorkoutHeroCopy } from '../data/workout-plan';
-import { getDashboardCommandSummary, type DashboardCommandSummary } from '../services/dashboardCommandService';
-import {
-  getTodaySnapshot,
-  saveTodayWeight,
-  type IntakeChecklistItem,
-  type TodaySnapshot,
-  upsertIntakeLog
-} from '../services/todayService';
+import { buildDashboardCommandSummary } from '../services/dashboardCommandService';
+import { saveTodayWeight, upsertIntakeLog } from '../services/todayService';
+import { getRunningProgressSnapshot } from '../services/runningServices';
+import { getIntakeSummary, getTodayCompletion, type FitnessDeskIntakeItem } from '../services/fitnessDeskState';
+import { useFitnessDeskState } from '../state/fitnessDeskState';
 
 export function TodayPage() {
-  const [snapshot, setSnapshot] = useState<TodaySnapshot | null>(null);
-  const [commandSummary, setCommandSummary] = useState<DashboardCommandSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { state, refresh } = useFitnessDeskState();
+  const [runningSnapshot, setRunningSnapshot] = useState<Awaited<ReturnType<typeof getRunningProgressSnapshot>> | null>(null);
   const [error, setError] = useState('');
   const [savingWeight, setSavingWeight] = useState(false);
   const [actingItemId, setActingItemId] = useState<string | null>(null);
-  const [weightInput, setWeightInput] = useState('');
+  const [weightInput, setWeightInput] = useState(state.body.dailyWeightKg?.toString() ?? '');
 
   useEffect(() => {
-    void loadSnapshot();
+    setWeightInput(state.body.dailyWeightKg?.toString() ?? '');
+  }, [state.body.dailyWeightKg]);
+
+  useEffect(() => {
+    let active = true;
+    void getRunningProgressSnapshot().then((result) => {
+      if (active) setRunningSnapshot(result);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
-
-  async function loadSnapshot() {
-    setLoading(true);
-    setError('');
-
-    try {
-      const next = await getTodaySnapshot();
-      const command = await getDashboardCommandSummary();
-      setSnapshot(next);
-      setCommandSummary(command);
-      setWeightInput((next.body.latestDailyWeight ?? next.body.weightValue?.numeric_value ?? '').toString());
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load today.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleIntakeAction(
     itemId: string,
@@ -59,7 +46,7 @@ export function TodayPage() {
 
     try {
       await upsertIntakeLog(itemId, input);
-      await loadSnapshot();
+      await refresh();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : 'Could not save intake status.');
     } finally {
@@ -79,7 +66,7 @@ export function TodayPage() {
 
     try {
       await saveTodayWeight(weight);
-      await loadSnapshot();
+      await refresh();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save weight.');
     } finally {
@@ -87,176 +74,208 @@ export function TodayPage() {
     }
   }
 
-  const score = snapshot?.completionScore ?? 0;
-  const intakeGroups = (snapshot?.intakeGroups ?? []).filter((group) => group.items.length > 0);
-  const intakeItems = intakeGroups.flatMap((group) => group.items);
-  const intakeTarget = intakeItems.length;
-  const intakeTaken = intakeItems.filter((item) => item.todayLog?.status === 'taken').length;
-  const intakeSkipped = intakeItems.filter((item) => item.todayLog?.status === 'skipped').length;
-  const intakeFullyDecided = intakeTarget > 0 && intakeItems.every((item) => item.todayLog?.status === 'taken' || item.todayLog?.status === 'skipped');
-  const todayWorkoutTitle = snapshot?.workout.cycleDay.title ?? 'Training day';
-  const heroContent = snapshot?.workout.cycleDay ? getWorkoutHeroCopy(snapshot.workout.cycleDay) : getTodayHeroContent(null);
-  const todayCoverMedia = getDayCoverMedia(snapshot?.workout.cycleDay.dayNumber ?? 1);
-  const todayHeroMedia = getTodayHeroMedia(snapshot?.workout.cycleDay.sessionType ?? null);
-  const todayWorkoutComplete = snapshot?.workout.sessionCompleted ?? false;
+  const intakeGroups = state.intakeGroups.filter((group) => group.items.length > 0);
+  const intakeSummary = getIntakeSummary(state);
+  const todayCompletion = getTodayCompletion(state);
+  const commandSummary = useMemo(
+    () =>
+      buildDashboardCommandSummary(
+        state,
+        runningSnapshot ?? {
+          runs: state.runningSessions,
+          bestThreePointTwoKmSeconds: 1200,
+          latestThreePointTwoKmSeconds: 1200,
+          targetThreePointTwoKmSeconds: 900,
+          baselineThreePointTwoKmSeconds: 1200,
+          currentPaceSecondsPerKm: 375,
+          targetPaceSecondsPerKm: 281,
+          baselineSpeedKmh: 9.6,
+          targetSpeedKmh: 12.8,
+          latestSpeedKmh: 9.6,
+          improvementSeconds: 0,
+          progressPercent: 0,
+          nextTestDate: '--',
+          milestones: []
+        }
+      ),
+    [runningSnapshot, state]
+  );
+  const score = todayCompletion.score;
+  const intakeFullyDecided = intakeSummary.handled === intakeSummary.planned;
+  const heroContent = state.hero;
+  const todayCoverMedia = getDayCoverMedia(state.currentSession.dayNumber);
+  const todayHeroMedia = getTodayHeroMedia(state.currentSession.cycleDay.sessionType ?? null);
+  const todayWorkoutComplete = state.currentSession.status === 'completed';
+  const sessionInProgress = state.currentSession.status === 'in_progress';
+  const sessionExerciseCount = state.currentSession.cycleDay.exercises.length;
+  const missionEyebrow = `Day ${state.currentSession.dayNumber} · ${state.currentDateLabel}`;
+  const missionPrimaryLabel = todayWorkoutComplete
+    ? 'Review Session'
+    : sessionInProgress
+      ? 'Continue Session'
+      : 'Start Session';
+  const weightValue = state.body.dailyWeightKg !== null ? `${state.body.dailyWeightKg} kg` : 'Not logged yet';
+  const nextActionMessage = getNextActionMessage({
+    workoutStatus: state.currentSession.status,
+    intakeHandled: intakeSummary.handled,
+    intakePlanned: intakeSummary.planned,
+    weightLogged: state.body.dailyWeightKg !== null
+  });
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="fd-panel-dark relative min-h-[320px] overflow-hidden p-5 sm:min-h-[380px] sm:p-8">
-          <div className="absolute -right-20 top-0 h-40 w-40 rounded-full bg-gold/12 blur-3xl" />
-          <MediaFrame
-            src={todayHeroMedia.imageUrl}
-            alt={todayHeroMedia.alt}
-            tone="dark"
-            loading="eager"
-            wrapperClassName="absolute inset-0"
-            imageClassName="h-full w-full object-cover opacity-28"
-            imageStyle={{ objectPosition: todayHeroMedia.objectPosition }}
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_340px]">
+        <div className="space-y-4">
+          <MissionCard
+            eyebrow={missionEyebrow}
+            title={state.currentSession.title}
+            subtitle={state.currentSession.focusShort}
+            description={heroContent.command}
+            status={commandSummary.workoutStatus}
+            image={{
+              src: todayHeroMedia.imageUrl ?? todayCoverMedia.imageUrl,
+              alt: todayHeroMedia.alt,
+              objectPosition: todayHeroMedia.objectPosition
+            }}
+            metadata={[
+              { label: 'Duration', value: `${state.currentSession.durationMin} min` },
+              { label: 'Type', value: state.currentSession.isRest ? 'Recovery day' : 'Structured day' },
+              { label: 'Exercises', value: sessionExerciseCount > 0 ? `${sessionExerciseCount}` : '--' }
+            ]}
+            primaryAction={
+              <Link to={`/workout?date=${state.todayIso}`} className="fd-button-accent min-w-[176px]">
+                {todayWorkoutComplete ? <CheckCircle2 className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {missionPrimaryLabel}
+              </Link>
+            }
+            secondaryAction={
+              <Link to="/plan" className="fd-button-secondary min-w-[136px]">
+                View Plan
+              </Link>
+            }
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-teal via-teal/92 to-teal/55" />
-          <div className="relative z-10 max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/58">
-              {format(new Date(), 'EEEE, MMMM d')}
-            </p>
-            <p className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-white sm:text-6xl">TODAY</p>
-            <p className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">
-              {heroContent.title}
-            </p>
-            <p className="mt-2 max-w-2xl text-sm font-medium uppercase tracking-[0.18em] text-gold">
-              {heroContent.focus}
-            </p>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-white/84 sm:text-lg">{heroContent.command}</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              {todayWorkoutComplete ? (
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatusTile
+              label="Training"
+              value={commandSummary.workoutStatus}
+              accent={state.currentSession.status === 'ready' || state.currentSession.status === 'in_progress'}
+            />
+            <StatusTile label="Intake" value={`${intakeSummary.handled}/${intakeSummary.planned} handled`} />
+            <StatusTile label="Weight" value={weightValue} />
+          </div>
+
+          <Card className="space-y-2">
+            <p className="fd-label">Next action</p>
+            <p className="card-title text-teal">{nextActionMessage}</p>
+          </Card>
+
+          <SectionCard
+            title="Today’s Workout"
+            eyebrow="Start session"
+            action={
+              <Link to={`/workout?date=${state.todayIso}`} className="fd-button-accent">
+                {todayWorkoutComplete ? <CheckCircle2 className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {missionPrimaryLabel}
+              </Link>
+            }
+          >
+            <Card className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="card-title text-teal">{heroContent.title}</p>
+                  <p className="body-copy mt-2 text-muted">{state.currentSession.focus}</p>
+                  <p className="helper-text mt-3 text-teal">{state.currentSession.durationMin} minutes</p>
+                </div>
+                <Badge variant={todayWorkoutComplete ? 'completed' : sessionInProgress ? 'in_progress' : 'ready'}>
+                  {commandSummary.workoutStatus}
+                </Badge>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <StatusTile label="Focus" value={state.currentSession.focusShort} />
+                <StatusTile label="Type" value={state.currentSession.isRest ? 'Recovery' : 'Structured'} />
+                <StatusTile label="Exercises" value={sessionExerciseCount > 0 ? `${sessionExerciseCount}` : '--'} />
+              </div>
+            </Card>
+          </SectionCard>
+
+          <SectionCard title="Next Workout" eyebrow="Next workout">
+            <Card className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="fd-label">{`Day ${state.nextSession.dayNumber}`}</p>
+                  <p className="section-title mt-2 text-teal">{state.nextSession.title}</p>
+                  <p className="body-copy mt-2 text-muted">{state.nextSession.focus}</p>
+                </div>
+                <Badge variant={state.nextSession.status === 'planned' ? 'planned' : 'ready'}>
+                  {formatStatusLabel(state.nextSession.status)}
+                </Badge>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <StatusTile label="Duration" value={`${state.nextSession.durationMin} min`} />
+                <StatusTile label="Type" value={state.nextSession.isRest ? 'Recovery' : 'Structured'} />
+                <StatusTile label="Date" value={state.nextSession.dateLabel} />
+              </div>
+            </Card>
+          </SectionCard>
+        </div>
+
+        <div className="space-y-4">
+          <SectionCard title="Complete the Day" eyebrow={getGreeting(state.currentDate)}>
+            <div className="grid gap-3">
+              <ChecklistRow
+                label="Training"
+                value={todayWorkoutComplete ? 'Completed' : commandSummary.workoutStatus}
+                done={todayWorkoutComplete}
+              />
+              <ChecklistRow
+                label="Intake"
+                value={`${intakeSummary.handled}/${intakeSummary.planned} handled`}
+                done={intakeFullyDecided}
+              />
+              <ChecklistRow label="Weight" value={weightValue} done={state.body.dailyWeightKg !== null} />
+              <ChecklistRow label="Completion score" value={`${score}%`} done={score === 100} />
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Quick Body Check-In" eyebrow="Today’s weight">
+            <Card className="space-y-4">
+              <div className="space-y-4">
+                <MetricInput
+                  label="Weight"
+                  unit="kg"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={weightInput}
+                  onChange={(event) => setWeightInput(event.target.value)}
+                />
                 <button
                   type="button"
-                  onClick={() => window.scrollTo({ top: document.body.scrollHeight * 0.45, behavior: 'smooth' })}
-                  className="fd-button-accent min-w-[176px]"
+                  onClick={() => void handleWeightSave()}
+                  disabled={savingWeight}
+                  className="fd-button-accent w-full justify-center disabled:opacity-60"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Continue intake
+                  {savingWeight ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  Save
                 </button>
-              ) : (
-                <Link
-                  to={`/workout?date=${snapshot?.todayIso ?? format(new Date(), 'yyyy-MM-dd')}`}
-                  className="fd-button-accent min-w-[176px]"
-                >
-                  <Play className="h-4 w-4" />
-                  Start session
-                </Link>
-              )}
-              <div className="inline-flex min-h-12 items-center rounded-2xl border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/86">
-                {commandSummary?.nextAction ?? 'Start the session. Save the sets. Finish clean.'}
               </div>
-            </div>
-            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <HeroMetric label="Today’s workout" value={commandSummary?.todaysWorkout ?? todayWorkoutTitle} />
-              <HeroMetric label="Completion score" value={`${score}%`} />
-              <HeroMetric label="Workout status" value={commandSummary?.workoutStatus ?? 'Ready'} />
-            </div>
-          </div>
+              <StatusTile label="Latest value" value={weightValue} />
+            </Card>
+          </SectionCard>
         </div>
-        <SectionCard title="Complete the day" eyebrow={snapshot?.greeting ?? 'Command'}>
-          <div className="grid gap-3">
-            <ChecklistRow
-              label="Session"
-              value={snapshot?.workout.sessionCompleted ? 'Complete' : 'Ready'}
-              done={snapshot?.workout.sessionCompleted ?? false}
-            />
-            <ChecklistRow
-              label="Intake"
-              value={`${intakeTaken}/${intakeTarget || 0}`}
-              done={intakeFullyDecided}
-            />
-            <ChecklistRow
-              label="Weight"
-              value={snapshot?.body.latestDailyWeight ? `${snapshot.body.latestDailyWeight} kg` : 'Not logged yet'}
-              done={Boolean(snapshot?.body.latestDailyWeight)}
-            />
-          </div>
-        </SectionCard>
       </section>
 
       {error ? <ErrorBanner message={error} /> : null}
-      {loading && !snapshot ? <StateCard title="Loading today" message="Fetching workout, intake, and check-in." /> : null}
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <SectionCard
-          title="Today’s Workout"
-          eyebrow="Start session"
-          action={
-            <Link
-              to={`/workout?date=${snapshot?.todayIso ?? format(new Date(), 'yyyy-MM-dd')}`}
-              className="fd-button-accent"
-            >
-              {todayWorkoutComplete ? <CheckCircle2 className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {todayWorkoutComplete ? 'Review session' : 'Start session'}
-            </Link>
-          }
-        >
-          <Card>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-lg font-semibold text-teal">{todayWorkoutTitle}</p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <p className="fd-label">Focus muscles</p>
-                    <p className="mt-2 text-sm leading-6 text-muted">{snapshot?.workout.cycleDay.focus}</p>
-                  </div>
-                  <div>
-                    <p className="fd-label">Estimated duration</p>
-                    <p className="mt-2 text-sm font-medium text-teal">
-                      {snapshot?.workout.cycleDay.estimatedDurationMinutes ?? 60} minutes
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-line bg-field px-4 py-3 text-center">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Status</p>
-                <p className="mt-1 font-semibold text-teal">
-                  {snapshot?.workout.sessionCompleted ? 'Complete' : 'Ready'}
-                </p>
-              </div>
-            </div>
-            <MediaFrame
-              src={todayCoverMedia.imageUrl}
-              alt={todayCoverMedia.alt}
-              wrapperClassName="mt-4 h-28 w-full rounded-[20px] md:h-36"
-              imageClassName="h-full w-full object-cover"
-              imageStyle={{ objectPosition: todayCoverMedia.objectPosition }}
-            />
-          </Card>
-        </SectionCard>
-
-        <SectionCard title="Next Workout" eyebrow="Next session is ready">
-          <Card>
-            <p className="text-lg font-semibold text-teal">{getNextWorkoutLabel(snapshot)}</p>
-            <p className="mt-2 text-sm leading-6 text-muted">{getNextWorkoutDetail(snapshot)}</p>
-            <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-teal">
-              <ArrowRight className="h-4 w-4" />
-              Ready
-            </div>
-          </Card>
-        </SectionCard>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <SectionCard title="Today’s Intake" eyebrow="One-tap checklist">
-          {intakeFullyDecided ? (
-            <Card className="space-y-3">
-              <p className="text-lg font-semibold text-teal">Today&apos;s intake is complete.</p>
-              <p className="text-sm text-muted">
-                Taken: {intakeTaken} of {intakeTarget}. Skipped: {intakeSkipped}.
-              </p>
-            </Card>
-          ) : (
-            <div className="space-y-5">
-              {intakeGroups.map((group) => (
-                <div key={group.timing}>
+          <div className="space-y-5">
+            {intakeGroups.map((group) => (
+              <div key={group.timingKey}>
                   <div className="mb-3 flex items-center gap-2">
                     <TimingIcon timing={group.timingKey} />
-                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">{group.timing}</h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">{group.timingLabel}</h3>
                   </div>
                   <div className="space-y-3">
                     {group.items.map((item) => (
@@ -269,71 +288,37 @@ export function TodayPage() {
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
         </SectionCard>
 
-        <SectionCard title="Quick Body Check-in" eyebrow="Today’s weight">
+        <div className="space-y-4">
           <Card className="space-y-4">
-            <p className="text-sm leading-6 text-muted">Record today’s weight.</p>
-            <div className="flex items-end gap-3">
-              <label className="flex-1">
-                <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Weight (kg)</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={weightInput}
-                  onChange={(event) => setWeightInput(event.target.value)}
-                  className="fd-input"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => void handleWeightSave()}
-                disabled={savingWeight}
-                className="fd-button-accent disabled:opacity-60"
-              >
-                {savingWeight ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Save
-              </button>
-            </div>
-            <div className="rounded-2xl border border-line bg-field px-4 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Latest</p>
-              <p className="mt-2 text-2xl font-semibold text-teal">
-                {snapshot?.body.latestDailyWeight !== null && snapshot?.body.latestDailyWeight !== undefined
-                  ? `${snapshot.body.latestDailyWeight} kg`
-                  : snapshot?.body.weightValue?.numeric_value
-                    ? `${snapshot.body.weightValue.numeric_value} kg`
-                    : 'Not logged yet'}
-              </p>
+            <p className="fd-label">Today’s Session</p>
+            <p className="card-title text-teal">{state.currentSession.fullTitle}</p>
+            <p className="helper-text text-muted">{heroContent.command}</p>
+          </Card>
+          <Card className="space-y-4">
+            <p className="fd-label">State summary</p>
+            <div className="grid gap-3">
+              <StatusTile label="Training" value={commandSummary.workoutStatus} />
+              <StatusTile label="Intake" value={`${intakeSummary.handled}/${intakeSummary.planned} handled`} />
+              <StatusTile label="Weight" value={weightValue} />
             </div>
           </Card>
-        </SectionCard>
+        </div>
       </section>
-    </div>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-white/6 px-4 py-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/54">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
     </div>
   );
 }
 
 function ChecklistRow({ label, value, done }: { label: string; value: string; done: boolean }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-line bg-white px-4 py-3">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</p>
-        <p className="mt-1 text-sm font-semibold text-teal">{value}</p>
-      </div>
-      {done ? <CheckCircle2 className="h-5 w-5 text-teal" /> : <Circle className="h-5 w-5 text-muted" />}
-    </div>
+    <ActionRow
+      label={label}
+      detail={value}
+      status={done ? <CheckCircle2 className="h-5 w-5 text-teal" /> : <Circle className="h-5 w-5 text-muted" />}
+    />
   );
 }
 
@@ -342,7 +327,7 @@ function IntakeRow({
   busy,
   onAction
 }: {
-  item: IntakeChecklistItem;
+  item: FitnessDeskIntakeItem;
   busy: boolean;
   onAction: (
     itemId: string,
@@ -369,8 +354,10 @@ function IntakeRow({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border border-line bg-[rgba(255,255,255,0.28)] p-4 shadow-float sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-1 items-center gap-3">
+    <ActionRow
+      label={item.name}
+      selected={isTaken}
+      status={
         <button
           type="button"
           disabled={busy}
@@ -401,11 +388,9 @@ function IntakeRow({
             <Circle className="h-5 w-5" />
           )}
         </button>
-        <div>
-          <p className="font-semibold text-teal">{item.name}</p>
-        </div>
-      </div>
-      <div className="flex gap-2">
+      }
+      actions={
+        <div className="flex gap-2">
         <button
           type="button"
           disabled={busy}
@@ -428,8 +413,9 @@ function IntakeRow({
         >
           Skipped
         </button>
-      </div>
-    </div>
+        </div>
+      }
+    />
   );
 }
 
@@ -437,16 +423,6 @@ function TimingIcon({ timing }: { timing: string }) {
   if (timing === 'night') return <Moon className="h-4 w-4 text-teal" />;
   if (timing === 'post_workout') return <Dumbbell className="h-4 w-4 text-teal" />;
   return <Sun className="h-4 w-4 text-teal" />;
-}
-
-function getNextWorkoutLabel(snapshot: TodaySnapshot | null) {
-  if (!snapshot?.nextWorkout) return 'Next session loading';
-  return snapshot.nextWorkout.title;
-}
-
-function getNextWorkoutDetail(snapshot: TodaySnapshot | null) {
-  if (!snapshot?.nextWorkout) return 'The weekly split will populate the next session preview.';
-  return `${snapshot.nextWorkout.focus} • ${snapshot.nextWorkout.estimatedDurationMinutes} min`;
 }
 
 function ErrorBanner({ message }: { message: string }) {
@@ -457,52 +433,45 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-function getTodayHeroContent(templateName: string | null | undefined) {
-  const normalized = (templateName ?? '').toLowerCase();
+function formatStatusLabel(status: string) {
+  if (status === 'ready') return 'Ready';
+  if (status === 'completed') return 'Complete';
+  if (status === 'in_progress') return 'In progress';
+  if (status === 'rest') return 'Recovery';
+  return status.replace('_', ' ');
+}
 
-  if (normalized.includes('rest')) {
-    return {
-      title: 'REST / WALKING',
-      focus: 'RECOVERY / EASY MOVEMENT',
-      command: 'Recover. Walk 30-45 minutes. Do not add hard running today.'
-    };
+function getGreeting(now: Date) {
+  const hour = now.getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function getNextActionMessage({
+  workoutStatus,
+  intakeHandled,
+  intakePlanned,
+  weightLogged
+}: {
+  workoutStatus: string;
+  intakeHandled: number;
+  intakePlanned: number;
+  weightLogged: boolean;
+}) {
+  const intakeIncomplete = intakeHandled < intakePlanned;
+
+  if (workoutStatus === 'ready' || workoutStatus === 'in_progress') {
+    return 'Start the session first. Log post-workout intake after training.';
   }
 
-  if (normalized.includes('pull')) {
-    return {
-      title: 'PULL — BACK / REAR DELTS / BICEPS',
-      focus: 'BACK / REAR DELTS / BICEPS',
-      command: 'Build the V-shape. Pull with control. No swinging.'
-    };
+  if (workoutStatus === 'completed' && intakeIncomplete) {
+    return 'Session complete. Finish post-workout intake.';
   }
 
-  if (normalized.includes('legs')) {
-    return {
-      title: 'LEGS + CORE + INTERVALS',
-      focus: 'QUADS / HAMSTRINGS / CORE / INTERVALS',
-      command: 'Run controlled. Train legs clean. No glute-heavy work today.'
-    };
+  if (intakeIncomplete || !weightLogged) {
+    return 'Finish intake and log today’s weight.';
   }
 
-  if (normalized.includes('upper')) {
-    return {
-      title: 'UPPER SHAPE — SHOULDERS / CHEST / BACK',
-      focus: 'SHOULDERS / CHEST / BACK',
-      command: 'Make the frame wider. Control every rep.'
-    };
-  }
-
-  if (normalized.includes('3.2') || normalized.includes('run')) {
-    return {
-      title: '3.2 KM RUN + ARMS / CORE',
-      focus: 'PACE / ARMS / CORE',
-      command: 'Run with discipline. Track pace. Finish clean.'
-    };
-  }
-
-  return {
-    title: 'PUSH — CHEST / SHOULDERS / TRICEPS',
-    focus: 'CHEST / SHOULDERS / TRICEPS',
-    command: 'Build the chest. Widen the frame. Leave 1-2 reps in reserve.'
-  };
+  return 'The day is under control. Review the next session when ready.';
 }

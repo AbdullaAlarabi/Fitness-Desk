@@ -1,0 +1,119 @@
+{
+  "baseUrl": "http://127.0.0.1:5175/Fitness-Desk/",
+  "captured": [
+    {
+      "screenName": "Today page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/",
+      "viewport": "desktop",
+      "viewportSize": "1440 × 1100",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/today_page_desktop.jpg",
+      "capturedAt": "2026-06-27T22:10:58.682Z",
+      "appReady": true,
+      "notes": "Full-page capture."
+    },
+    {
+      "screenName": "Today page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/",
+      "viewport": "mobile",
+      "viewportSize": "430 × 932",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/today_page_mobile.jpg",
+      "capturedAt": "2026-06-27T22:11:04.323Z",
+      "appReady": true,
+      "notes": "Full-page capture."
+    },
+    {
+      "screenName": "Plan page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/plan",
+      "viewport": "desktop",
+      "viewportSize": "1440 × 1100",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/plan_page_desktop.jpg",
+      "capturedAt": "2026-06-27T22:11:04.927Z",
+      "appReady": true,
+      "notes": "Full-page capture."
+    },
+    {
+      "screenName": "Plan page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/plan",
+      "viewport": "mobile",
+      "viewportSize": "430 × 932",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/plan_page_mobile.jpg",
+      "capturedAt": "2026-06-27T22:11:05.600Z",
+      "appReady": true,
+      "notes": "Full-page capture."
+    },
+    {
+      "screenName": "Workout start screen",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/workout",
+      "viewport": "desktop",
+      "viewportSize": "1440 × 1100",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/workout_start_screen_desktop.jpg",
+      "capturedAt": "2026-06-27T22:11:07.120Z",
+      "appReady": true,
+      "notes": "Full-page capture."
+    },
+    {
+      "screenName": "Workout start screen",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/workout",
+      "viewport": "mobile",
+      "viewportSize": "430 × 932",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/workout_start_screen_mobile.jpg",
+      "capturedAt": "2026-06-27T22:11:08.593Z",
+      "appReady": true,
+      "notes": "Full-page capture."
+    },
+    {
+      "screenName": "Body page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/body",
+      "viewport": "desktop",
+      "viewportSize": "1440 × 1100",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/body_page_desktop.jpg",
+      "capturedAt": "2026-06-27T22:11:09.768Z",
+      "appReady": true,
+      "notes": "Viewport capture."
+    },
+    {
+      "screenName": "Body page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/body",
+      "viewport": "mobile",
+      "viewportSize": "430 × 932",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/body_page_mobile.jpg",
+      "capturedAt": "2026-06-27T22:11:10.754Z",
+      "appReady": true,
+      "notes": "Viewport capture."
+    },
+    {
+      "screenName": "Progress page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/progress",
+      "viewport": "desktop",
+      "viewportSize": "1440 × 1100",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/progress_page_desktop.jpg",
+      "capturedAt": "2026-06-27T22:11:11.792Z",
+      "appReady": true,
+      "notes": "Viewport capture."
+    },
+    {
+      "screenName": "Progress page",
+      "route": "http://127.0.0.1:5175/Fitness-Desk/#/progress",
+      "viewport": "mobile",
+      "viewportSize": "430 × 932",
+      "screenshotPath": "/Users/abdulla/Desktop/Fitness Desk/visual-qa/screenshots/progress_page_mobile.jpg",
+      "capturedAt": "2026-06-27T22:11:12.600Z",
+      "appReady": true,
+      "notes": "Viewport capture."
+    }
+  ],
+  "skipped": [
+    {
+      "name": "Workout active/player screen",
+      "reason": "No existing active workout session was reachable without creating or modifying user data."
+    },
+    {
+      "name": "Exercise demo modal",
+      "reason": "Demo modal is only available from an active workout player, and no active session was reachable safely."
+    }
+  ],
+  "notes": [
+    "No Start Session button was available on /workout to create an active workout state."
+  ],
+  "generatedAt": "2026-06-27T22:10:54.690Z"
+}

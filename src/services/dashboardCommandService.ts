@@ -1,9 +1,13 @@
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../lib/constants';
-import { getBodyDashboardSnapshot } from './bodyDashboardService';
-import { getWorkoutPlanByDayNumber } from '../data/workout-plan';
-import { getProgressDashboardSummary } from './progressDashboardService';
+import {
+  getFitnessDeskState,
+  getIntakeSummary,
+  getProgressSummary,
+  getTodayCompletion,
+  getWeightSummary,
+  type FitnessDeskState
+} from './fitnessDeskState';
+import { getAppNow } from '../lib/appClock';
 import { RUN_TARGET_TIME_SECONDS, formatRunTime, getRunningProgressSnapshot } from './runningServices';
-import { getTodaySnapshot } from './todayService';
 
 export type DashboardQuickStat = {
   label: string;
@@ -21,130 +25,91 @@ export type DashboardCommandSummary = {
   coachNoteBody: string;
 };
 
-export async function getDashboardCommandSummary(now = new Date()): Promise<DashboardCommandSummary> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return buildFallbackSummary();
-  }
-
-  try {
-    const [today, body, progress, running] = await Promise.all([
-      getTodaySnapshot(now),
-      getBodyDashboardSnapshot('30D'),
-      getProgressDashboardSummary(now),
-      getRunningProgressSnapshot()
-    ]);
-
-    const weightCard = body.cards.find((card) => card.key === 'weight');
-    const bodyFatCard = body.cards.find((card) => card.key === 'body_fat');
-    const weeklyAverage = body.calculatedMetrics.find((metric) => metric.key === 'weekly_average_weight');
-    const dailyWeightLogCount = body.series.weight.length;
-    const bodyFatDelta = describeDelta(body.series.body_fat);
-    const runGapSeconds = Math.max(0, running.latestThreePointTwoKmSeconds - RUN_TARGET_TIME_SECONDS);
-
-    return {
-      commandLine: 'Train clean. Track honestly. Adjust with data.',
-      todaysWorkout: today.workout.cycleDay.title,
-      workoutStatus: today.workout.sessionCompleted
-        ? 'Session complete'
-        : today.workout.cycleDay
-          ? 'Ready to train'
-          : 'Plan not loaded',
-      nextAction: today.workout.sessionCompleted
-        ? 'Recovery and intake now.'
-        : today.workout.cycleDay
-          ? 'Start today’s session.'
-          : 'Open the next planned workout.',
-      quickStats: [
-        {
-          label: 'Weight trend',
-          value: weightCard?.value !== null && weightCard?.value !== undefined ? `${weightCard.value} kg` : 'No logs yet',
-          hint:
-            dailyWeightLogCount === 0
-              ? 'Log daily weight to build the average.'
-              : dailyWeightLogCount === 1
-                ? `Latest daily weight saved. 7-day average: ${weeklyAverage?.value ?? 'Needs more logs'}.`
-                : `7-day average: ${weeklyAverage?.value ?? 'Needs more logs'}.`
-        },
-        {
-          label: 'Body fat trend',
-          value: bodyFatCard?.value !== null && bodyFatCard?.value !== undefined ? `${bodyFatCard.value}%` : 'No logs yet',
-          hint: bodyFatDelta ?? 'Add weekly body scans to see the trend.'
-        },
-        {
-          label: '3.2 km progress',
-          value: formatRunTime(running.bestThreePointTwoKmSeconds),
-          hint: runGapSeconds > 0 ? `${Math.ceil(runGapSeconds / 60)} min from target pace.` : 'Target pace is in range.'
-        },
-        {
-          label: 'Weekly consistency',
-          value: `${progress.consistencyScore}%`,
-          hint: `${progress.workoutCompletionPercent}% workouts completed this week.`
-        }
-      ],
-      coachNoteTitle: buildCoachNoteTitle(today, progress),
-      coachNoteBody: buildCoachNoteBody(today, body, progress)
-    };
-  } catch {
-    return buildFallbackSummary();
-  }
+export async function getDashboardCommandSummary(now = getAppNow()): Promise<DashboardCommandSummary> {
+  const [state, running] = await Promise.all([getFitnessDeskState(now), getRunningProgressSnapshot()]);
+  return buildDashboardCommandSummary(state, running);
 }
 
-function buildCoachNoteTitle(today: Awaited<ReturnType<typeof getTodaySnapshot>> | null, progress?: Awaited<ReturnType<typeof getProgressDashboardSummary>> | null) {
-  if (!today || !progress) return 'Log your first check-in';
-  if (today.workout.sessionCompleted) return 'Session complete';
-  if (progress.consistencyScore === 0) return 'Log your first check-in';
+export function buildDashboardCommandSummary(
+  state: FitnessDeskState,
+  running: Awaited<ReturnType<typeof getRunningProgressSnapshot>>
+): DashboardCommandSummary {
+  const weight = getWeightSummary(state);
+  const intake = getIntakeSummary(state);
+  const progress = getProgressSummary(state);
+  const todayCompletion = getTodayCompletion(state);
+  const bodyFatValue = state.body.latestMetrics.bodyFat;
+  const runGapSeconds = Math.max(0, running.latestThreePointTwoKmSeconds - RUN_TARGET_TIME_SECONDS);
+
+  return {
+    commandLine: 'Train clean. Track honestly. Adjust with data.',
+    todaysWorkout: state.currentSession.fullTitle,
+    workoutStatus: formatStatus(state.currentSession.status),
+    nextAction: state.currentSession.status === 'completed' ? 'Recovery and intake now.' : 'Start session.',
+    quickStats: [
+      {
+        label: 'Weight trend',
+        value: weight.label,
+        hint: weight.value === null ? 'Log daily weight to build the average.' : 'Latest daily weight is synced across Today and Body.'
+      },
+      {
+        label: 'Body fat trend',
+        value: bodyFatValue !== null ? `${bodyFatValue}%` : 'No logs yet',
+        hint: bodyFatValue !== null ? 'Weekly scan data is connected.' : 'Add weekly body scans to see the trend.'
+      },
+      {
+        label: '3.2 km progress',
+        value: formatRunTime(running.bestThreePointTwoKmSeconds),
+        hint: runGapSeconds > 0 ? `${Math.ceil(runGapSeconds / 60)} min from target pace.` : 'Target pace is in range.'
+      },
+      {
+        label: 'Weekly consistency',
+        value: `${progress.consistencyScore}%`,
+        hint: `${progress.workoutCompletionPercent}% workouts completed this week.`
+      }
+    ],
+    coachNoteTitle: buildCoachNoteTitle(state),
+    coachNoteBody: buildCoachNoteBody(state, intake, todayCompletion)
+  };
+}
+
+function buildCoachNoteTitle(state: FitnessDeskState) {
+  if (state.currentSession.status === 'completed') return 'Session complete';
+  if (state.progress.consistencyScore === 0) return 'Start the week';
   return 'Workout is planned';
 }
 
 function buildCoachNoteBody(
-  today: Awaited<ReturnType<typeof getTodaySnapshot>> | null,
-  body: Awaited<ReturnType<typeof getBodyDashboardSnapshot>> | null,
-  progress?: Awaited<ReturnType<typeof getProgressDashboardSummary>> | null
+  state: FitnessDeskState,
+  intake: ReturnType<typeof getIntakeSummary>,
+  todayCompletion: ReturnType<typeof getTodayCompletion>
 ) {
-  if (!today || !body || !progress) {
-    return 'Log your first check-in to activate coaching notes.';
-  }
-
-  if (today.workout.sessionCompleted) {
+  if (state.currentSession.status === 'completed') {
     return 'Session complete. Recovery and consistency matter now.';
   }
 
-  if (today.workout.cycleDay) {
-    return 'Shift the session only if needed. Do not break the chain.';
+  if (todayCompletion.weightLogged || intake.handled > 0) {
+    return 'The session is live. Save the sets. Finish clean.';
   }
 
-  if (body.cards.every((card) => card.value === null) && progress.consistencyScore === 0) {
-    return 'Log your first check-in to activate coaching notes.';
+  return 'Start the session. Save the sets. Finish clean.';
+}
+
+function formatStatus(status: FitnessDeskState['currentSessionStatus']) {
+  switch (status) {
+    case 'completed':
+      return 'Session complete';
+    case 'in_progress':
+      return 'In progress';
+    case 'ready':
+      return 'Ready';
+    case 'planned':
+      return 'Planned';
+    case 'rest':
+      return 'Recovery';
+    case 'missed':
+      return 'Missed';
+    default:
+      return status.replace('_', ' ');
   }
-
-  return 'Train clean. Track honestly. Adjust with data.';
-}
-
-function buildFallbackSummary(): DashboardCommandSummary {
-  const fallbackDay = getWorkoutPlanByDayNumber(1);
-
-  return {
-    commandLine: 'Train clean. Track honestly. Adjust with data.',
-    todaysWorkout: fallbackDay.title,
-    workoutStatus: 'Waiting for data',
-    nextAction: 'Load the schedule or connect Supabase.',
-    quickStats: [
-      { label: 'Weight trend', value: 'No logs yet', hint: 'Log daily weight to start the average.' },
-      { label: 'Body fat trend', value: 'No logs yet', hint: 'Weekly scans will populate this card.' },
-      { label: '3.2 km progress', value: '20:00', hint: 'Current benchmark until runs are logged.' },
-      { label: 'Weekly consistency', value: '0%', hint: 'Complete today’s actions to build the score.' }
-    ],
-    coachNoteTitle: 'Log your first check-in',
-    coachNoteBody: 'Log your first check-in to activate coaching notes.'
-  };
-}
-
-function describeDelta(series: Array<{ date: string; value: number }>) {
-  if (series.length < 2) return null;
-  const latest = series[series.length - 1]?.value ?? null;
-  const previous = series[series.length - 2]?.value ?? null;
-  if (latest === null || previous === null) return null;
-  const delta = Number((latest - previous).toFixed(1));
-  if (delta === 0) return 'Stable versus the last reading.';
-  return `${delta > 0 ? '+' : ''}${delta}% versus the last entry.`;
 }

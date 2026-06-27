@@ -1,11 +1,11 @@
 import { format } from 'date-fns';
 import { intakeSchedule, intakeTimingLabels, intakeTimingOrder, normalizeIntakeTiming, type IntakeTiming } from '../data/intakeSchedule';
 import { getWorkoutPlanDayForDate, type WorkoutPlanDayConfig } from '../data/workout-plan';
+import { getAppNow } from '../lib/appClock';
 import { emitDashboardRefresh } from '../lib/dashboardEvents';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
-import { getLatestDailyCheckinSnapshot } from './bodyDashboardService';
-import { resolveNextTrainingDay, resolveTrainingDayForDate } from './trainingCycle';
+import { getFitnessDeskState } from './fitnessDeskState';
 import { buildMissingMigrationError, isMissingColumnError } from './shared';
 import type {
   BodyCheckinRow,
@@ -55,115 +55,49 @@ export type TodaySnapshot = {
   completionScore: number;
 };
 
-export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot> {
-  const todayIso = format(now, 'yyyy-MM-dd');
-  const client = getSupabaseClient();
-
-  const [intakeItemsResult, intakeLogsResult, todayScheduledResult, upcomingScheduledResult, templateResult, sessionResult, checkinResult, metricDefResult, latestDaily] =
-    await Promise.all([
-      client.from('intake_items').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position'),
-      client.from('intake_logs').select('*').eq('workspace_id', WORKSPACE_ID).gte('logged_at', `${todayIso}T00:00:00`).lt('logged_at', `${todayIso}T23:59:59.999`),
-      client.from('scheduled_workouts').select('*').eq('workspace_id', WORKSPACE_ID).eq('scheduled_date', todayIso).order('created_at'),
-      client.from('scheduled_workouts').select('*').eq('workspace_id', WORKSPACE_ID).gte('scheduled_date', todayIso).order('scheduled_date'),
-      client.from('workout_templates').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position'),
-      client.from('workout_sessions').select('*').eq('workspace_id', WORKSPACE_ID).eq('session_date', todayIso).order('created_at'),
-      client.from('body_checkins').select('*').eq('workspace_id', WORKSPACE_ID).eq('checkin_date', todayIso).eq('checkin_type', 'daily').order('created_at'),
-      client.from('body_metric_definitions').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position'),
-      getLatestDailyCheckinSnapshot()
-    ]);
-
-  const firstError =
-    intakeItemsResult.error ||
-    intakeLogsResult.error ||
-    todayScheduledResult.error ||
-    upcomingScheduledResult.error ||
-    templateResult.error ||
-    sessionResult.error ||
-    checkinResult.error ||
-    metricDefResult.error;
-
-  if (firstError) {
-    throw firstError;
-  }
-
-  const intakeItems = (intakeItemsResult.data as IntakeItemRow[]) ?? [];
-  const intakeLogs = (intakeLogsResult.data as IntakeLogRow[]) ?? [];
-  const scheduledWorkouts = (todayScheduledResult.data as ScheduledWorkoutRow[]) ?? [];
-  const upcomingScheduledWorkouts = (upcomingScheduledResult.data as ScheduledWorkoutRow[]) ?? [];
-  const templates = (templateResult.data as WorkoutTemplateRow[]) ?? [];
-  const sessions = (sessionResult.data as WorkoutSessionRow[]) ?? [];
-  const checkins = (checkinResult.data as BodyCheckinRow[]) ?? [];
-  const definitions = (metricDefResult.data as BodyMetricDefinitionRow[]) ?? [];
-
-  const todayScheduled = scheduledWorkouts[0] ?? null;
-  const activeTemplate = todayScheduled
-    ? templates.find((template) => template.id === todayScheduled.template_id) ??
-      templates.find((template) => template.name === todayScheduled.title) ??
-      null
-    : findTemplateForDate(templates, now);
-  const resolvedToday = resolveTrainingDayForDate(now, {
-    scheduledWorkout: todayScheduled,
-    template: activeTemplate
-  });
-  const nextWorkout = resolveNextTrainingDay(now, {
-    upcomingScheduledWorkouts,
-    templates
-  }).day;
-
-  const intakeGroups = buildIntakeGroups(intakeItems, intakeLogs);
-  const dailyCheckin = checkins[0] ?? null;
-  const weightDefinition = definitions.find((item) => item.key === 'weight') ?? null;
-
-  let weightValue: BodyMetricValueRow | null = null;
-  if (dailyCheckin && weightDefinition) {
-    const weightValueResult = await client
-      .from('body_metric_values')
-      .select('*')
-      .eq('workspace_id', WORKSPACE_ID)
-      .eq('body_checkin_id', dailyCheckin.id)
-      .eq('metric_definition_id', weightDefinition.id)
-      .maybeSingle();
-
-    if (weightValueResult.error) {
-      throw weightValueResult.error;
-    }
-
-    weightValue = (weightValueResult.data as BodyMetricValueRow | null) ?? null;
-  }
-
-  const workoutCompleted =
-    sessions.length > 0 ||
-    (todayScheduled ? ['completed', 'done'].includes(todayScheduled.status.toLowerCase()) : false);
-  const intakeCompleted = intakeGroups.flatMap((group) => group.items).filter((item) => item.todayLog?.status === 'taken').length;
-  const intakeTarget = intakeGroups.flatMap((group) => group.items).length;
-  const intakeRatio = intakeTarget > 0 ? intakeCompleted / intakeTarget : 0;
-  const bodyCompleted = weightValue?.numeric_value ? 1 : 0;
-
-  const completionScore = Math.round((workoutCompleted ? 0.5 : 0) * 100 + intakeRatio * 30 + bodyCompleted * 20);
+export async function getTodaySnapshot(now = getAppNow()): Promise<TodaySnapshot> {
+  const state = await getFitnessDeskState(now);
+  const intakeGroups = state.intakeGroups.map((group) => ({
+    timingKey: group.timingKey,
+    timing: group.timingLabel,
+    items: group.items
+      .map((item) => item.item ? ({
+        ...item.item,
+        todayLog: item.todayLog,
+        scheduleId: item.id,
+        timingKey: item.timingKey
+      }) : null)
+      .filter((item): item is IntakeChecklistItem => item !== null)
+  }));
+  const completionScore = Math.round(
+    (state.currentSession.status === 'completed' ? 0.5 : 0) * 100 +
+      (state.intakeSummary.planned > 0 ? state.intakeSummary.handled / state.intakeSummary.planned : 0) * 30 +
+      (state.body.dailyWeightKg !== null ? 20 : 0)
+  );
 
   return {
-    todayIso,
+    todayIso: state.todayIso,
     greeting: getGreeting(now),
     intakeGroups,
     workout: {
-      scheduledWorkout: todayScheduled,
-      template: activeTemplate,
-      cycleDay: resolvedToday.day,
-      sessionCompleted: workoutCompleted
+      scheduledWorkout: state.currentSession.scheduledWorkout,
+      template: state.currentSession.template,
+      cycleDay: state.currentSession.cycleDay,
+      sessionCompleted: state.currentSession.status === 'completed'
     },
-    nextWorkout,
+    nextWorkout: state.nextSession.cycleDay,
     body: {
-      checkin: dailyCheckin,
-      weightDefinition,
-      weightValue,
-      latestDailyWeight: latestDaily?.weight ?? null,
-      latestDailyCheckinDate: latestDaily?.checkinDate ?? null
+      checkin: state.body.latestDailyCheckin,
+      weightDefinition: null,
+      weightValue: null,
+      latestDailyWeight: state.body.dailyWeightKg,
+      latestDailyCheckinDate: state.body.latestDailyCheckinDate
     },
     completionScore
   };
 }
 
-export async function upsertIntakeStatus(intakeItemId: string, status: 'taken' | 'skipped', now = new Date()) {
+export async function upsertIntakeStatus(intakeItemId: string, status: 'taken' | 'skipped', now = getAppNow()) {
   return upsertIntakeLog(intakeItemId, { status }, now);
 }
 
@@ -176,7 +110,7 @@ export async function upsertIntakeLog(
     notes?: string | null;
     timeTaken?: string | null;
   },
-  now = new Date()
+  now = getAppNow()
 ) {
   if (intakeItemId.startsWith('fallback-')) {
     throw new Error('Seed the intake defaults from /seed before saving this item.');
@@ -273,7 +207,7 @@ function resolveLoggedAtIso(todayIso: string, timeTaken: string | null | undefin
   return new Date(`${todayIso}T${timeTaken}:00`).toISOString();
 }
 
-export async function saveTodayWeight(weight: number, now = new Date()) {
+export async function saveTodayWeight(weight: number, now = getAppNow()) {
   const client = getSupabaseClient();
   const todayIso = format(now, 'yyyy-MM-dd');
 

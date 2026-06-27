@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { getExerciseMediaConfig } from '../data/exerciseMedia';
+import { getAppNow } from '../lib/appClock';
 import { emitDashboardRefresh } from '../lib/dashboardEvents';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
@@ -67,7 +68,7 @@ const restDayRules = [
   'Mark complete after walking.'
 ] as const;
 
-export async function getWorkoutModeSnapshot(dateIso = format(new Date(), 'yyyy-MM-dd')): Promise<WorkoutModeSnapshot> {
+export async function getWorkoutModeSnapshot(dateIso = format(getAppNow(), 'yyyy-MM-dd')): Promise<WorkoutModeSnapshot> {
   const client = getSupabaseClient();
   const [scheduledResult, templateResult, sessionsResult] = await Promise.all([
     client
@@ -206,7 +207,7 @@ export async function getWorkoutModeSnapshot(dateIso = format(new Date(), 'yyyy-
   };
 }
 
-export async function ensureWorkoutSession(dateIso = format(new Date(), 'yyyy-MM-dd')) {
+export async function ensureWorkoutSession(dateIso = format(getAppNow(), 'yyyy-MM-dd')) {
   const snapshot = await getWorkoutModeSnapshot(dateIso);
   if (snapshot.session) return snapshot.session;
 

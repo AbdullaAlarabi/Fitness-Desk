@@ -1,10 +1,12 @@
 import { addDays, format, isBefore } from 'date-fns';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
+import { getAppNow } from '../lib/appClock';
 import type { ScheduledWorkoutRow, WorkoutTemplateRow } from '../types/database';
 import { getTrainingCycleStart, getWorkoutPlanDayForDate, type WorkoutPlanDayConfig } from '../data/workout-plan';
+import { getFitnessDeskState, type FitnessDeskPlanDay } from './fitnessDeskState';
 
-export type PlanStatus = 'planned' | 'completed' | 'skipped' | 'shifted' | 'rest' | 'missed';
+export type PlanStatus = 'ready' | 'planned' | 'in_progress' | 'completed' | 'skipped' | 'shifted' | 'rest' | 'missed';
 
 export type PlanDay = {
   date: Date;
@@ -31,42 +33,27 @@ export type ShiftOptions = {
   useRecoveryDays: boolean;
 };
 
-export async function getPlanDayByDate(dateIso: string, now = new Date()) {
+export async function getPlanDayByDate(dateIso: string, now = getAppNow()) {
   const snapshot = await getPlanWeekSnapshot(now);
   return snapshot.days.find((day) => day.dateIso === dateIso) ?? null;
 }
 
-export async function getPlanWeekSnapshot(now = new Date()): Promise<PlanWeekSnapshot> {
-  const client = getSupabaseClient();
+export async function getPlanWeekSnapshot(now = getAppNow()): Promise<PlanWeekSnapshot> {
+  const state = await getFitnessDeskState(now);
   const weekStart = getTrainingCycleStart(now);
-  const weekEnd = addDays(weekStart, 6);
-
-  const [templateResult, scheduledResult] = await Promise.all([
-    client.from('workout_templates').select('*').eq('workspace_id', WORKSPACE_ID).eq('is_active', true).order('position'),
-    client
-      .from('scheduled_workouts')
-      .select('*')
-      .eq('workspace_id', WORKSPACE_ID)
-      .gte('scheduled_date', format(weekStart, 'yyyy-MM-dd'))
-      .lte('scheduled_date', format(weekEnd, 'yyyy-MM-dd'))
-      .order('scheduled_date')
-  ]);
-
-  if (templateResult.error) throw templateResult.error;
-  if (scheduledResult.error) throw scheduledResult.error;
-
-  const templates = (templateResult.data as WorkoutTemplateRow[]) ?? [];
-  const scheduled = (scheduledResult.data as ScheduledWorkoutRow[]) ?? [];
-
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const date = addDays(weekStart, index);
-    const dateIso = format(date, 'yyyy-MM-dd');
-    const template = templates.find((item) => item.day_label === `Day ${index + 1}`) ?? null;
-    const scheduledWorkout = scheduled.find((item) => item.scheduled_date === dateIso) ?? null;
-    return derivePlanDay(date, dateIso, template, scheduledWorkout, now);
-  });
-
-  return { weekStart, days, cycleShifted: detectCycleShifted(days) };
+  const days: PlanDay[] = state.weeklyPlan.map((day) => ({
+    date: day.date,
+    dateIso: day.dateIso,
+    template: day.template,
+    scheduledWorkout: day.scheduledWorkout,
+    cycleDay: day.cycleDay,
+    name: day.name,
+    focus: day.focus,
+    durationMinutes: day.durationMin,
+    status: day.status,
+    isRest: day.isRest
+  }));
+  return { weekStart, days, cycleShifted: detectCycleShifted(state.weeklyPlan) };
 }
 
 export async function startPlanDay(day: PlanDay) {
@@ -80,7 +67,7 @@ export async function markPlanDayStatus(day: PlanDay, status: Exclude<PlanStatus
   await upsertScheduledWorkout(day.dateIso, template, day.cycleDay, status);
 }
 
-export async function markPlanDayStatusByDate(dateIso: string, status: Exclude<PlanStatus, 'rest' | 'missed'>, now = new Date()) {
+export async function markPlanDayStatusByDate(dateIso: string, status: Exclude<PlanStatus, 'rest' | 'missed'>, now = getAppNow()) {
   const day = await getPlanDayByDate(dateIso, now);
   if (!day) {
     throw new Error('Workout day not found in the current weekly plan.');
@@ -107,7 +94,7 @@ export async function movePlanDay(day: PlanDay, targetDateIso: string) {
   await upsertScheduledWorkout(day.dateIso, day.template, day.cycleDay, 'shifted');
 }
 
-export async function shiftPlanForward(options: ShiftOptions, now = new Date()) {
+export async function shiftPlanForward(options: ShiftOptions, now = getAppNow()) {
   const { sourceDateIso, shiftRemaining, useRecoveryDays } = options;
   const horizon = await getPlanHorizon(now, 14);
   const sourceIndex = horizon.findIndex((item) => item.dateIso === sourceDateIso);
@@ -227,7 +214,7 @@ function normalizeScheduledTitle(title: string | null | undefined) {
   return title;
 }
 
-function detectCycleShifted(days: PlanDay[]) {
+function detectCycleShifted(days: Array<PlanDay | FitnessDeskPlanDay>) {
   return days.some((day) => {
     if (day.scheduledWorkout?.status?.toLowerCase() === 'shifted') return true;
     if (!day.scheduledWorkout || !day.template) return false;

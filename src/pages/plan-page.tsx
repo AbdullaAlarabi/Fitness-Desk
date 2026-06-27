@@ -1,57 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowRightLeft, CalendarDays, Check, MoreHorizontal, Play, RotateCcw, Shuffle, SkipForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { MediaFrame, Pill, SectionCard, StateCard } from '../components/ui';
+import { Badge, Card, IconButton, ScheduleCard, SectionCard, StateCard } from '../components/ui';
 import { getDayCoverMedia } from '../data/mediaManifest';
 import {
-  getPlanWeekSnapshot,
   markPlanDayStatus,
   movePlanDay,
   resetPlanDay,
   shiftPlanForward,
   startPlanDay,
-  type PlanDay,
-  type PlanStatus,
-  type PlanWeekSnapshot
+  type PlanStatus
 } from '../services/planService';
+import type { FitnessDeskPlanDay } from '../services/fitnessDeskState';
+import { useFitnessDeskState } from '../state/fitnessDeskState';
 
 export function PlanPage() {
-  const [snapshot, setSnapshot] = useState<PlanWeekSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { state, refresh } = useFitnessDeskState();
   const [error, setError] = useState('');
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [shiftModal, setShiftModal] = useState<PlanDay | null>(null);
-  const [moveModal, setMoveModal] = useState<PlanDay | null>(null);
+  const [menuDay, setMenuDay] = useState<FitnessDeskPlanDay | null>(null);
+  const [shiftModal, setShiftModal] = useState<FitnessDeskPlanDay | null>(null);
+  const [moveModal, setMoveModal] = useState<FitnessDeskPlanDay | null>(null);
   const [shiftRemaining, setShiftRemaining] = useState(true);
   const [useRecoveryDays, setUseRecoveryDays] = useState(false);
   const [moveTarget, setMoveTarget] = useState('');
-
-  useEffect(() => {
-    void loadPlan();
-  }, []);
-
-  async function loadPlan() {
-    setLoading(true);
-    setError('');
-
-    try {
-      const next = await getPlanWeekSnapshot();
-      setSnapshot(next);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load the weekly plan.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function runAction(key: string, action: () => Promise<void>) {
     setBusyKey(key);
     setError('');
     try {
       await action();
-      await loadPlan();
+      await refresh();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : 'Plan action failed.');
     } finally {
@@ -59,7 +40,7 @@ export function PlanPage() {
     }
   }
 
-  async function handleSkip(day: PlanDay) {
+  async function handleSkip(day: FitnessDeskPlanDay) {
     await runAction(`skip-${day.dateIso}`, async () => {
       await markPlanDayStatus(day, 'skipped');
     });
@@ -93,50 +74,46 @@ export function PlanPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <SectionCard
-        title="Weekly split"
-        eyebrow="Plan"
-        action={
-          <button
-            type="button"
-            onClick={() => void loadPlan()}
-            className="fd-button-secondary min-h-11 px-4"
-          >
-            Refresh
-          </button>
-        }
-      >
+    <div className="space-y-6 pb-28 md:pb-10">
+      <SectionCard title="Weekly split" eyebrow="Plan">
         <div className="space-y-4">
-          {snapshot?.cycleShifted ? (
+          <p className="body-copy text-muted">7-day training cycle</p>
+          <WeekOverviewStrip weeklyPlan={state.weeklyPlan} currentSessionId={state.currentSessionId} />
+
+          {state.weeklyPlan.some((day) => day.status === 'shifted') ? (
             <StateCard
               title="Cycle shifted based on current schedule."
               message="The weekly split is following your current moved or shifted workout dates."
             />
           ) : null}
-          {snapshot?.days.map((day) => (
-            <PlanDayCard
-              key={day.dateIso}
-              day={day}
-              busy={busyKey?.includes(day.dateIso) ?? false}
-              onStart={() => runAction(`start-${day.dateIso}`, () => startPlanDay(day))}
-              onComplete={() => runAction(`complete-${day.dateIso}`, () => markPlanDayStatus(day, 'completed'))}
-              onSkip={() => void handleSkip(day)}
-              onShift={() => {
-                setShiftRemaining(true);
-                setUseRecoveryDays(false);
-                setShiftModal(day);
-              }}
-              onMove={() => {
-                setMoveModal(day);
-                setMoveTarget(day.dateIso);
-              }}
-              onReset={() => runAction(`reset-${day.dateIso}`, () => resetPlanDay(day))}
-            />
-          ))}
 
-          {loading ? <StateCard title="Loading plan" message="Fetching this week." /> : null}
-          {!loading && snapshot?.days.length === 0 ? <StateCard title="No weekly plan" message="No templates found." /> : null}
+          <div className="grid gap-4 xl:grid-cols-2">
+            {state.weeklyPlan.map((day) => (
+              <PlanDayCard
+                key={day.dateIso}
+                day={day}
+                isCurrent={day.id === state.currentSessionId}
+                isNext={day.id === state.nextSession.id}
+                busy={busyKey?.includes(day.dateIso) ?? false}
+                onStart={() => runAction(`start-${day.dateIso}`, () => startPlanDay(day))}
+                onComplete={() => runAction(`complete-${day.dateIso}`, () => markPlanDayStatus(day, 'completed'))}
+                onSkip={() => void handleSkip(day)}
+                onShift={() => {
+                  setShiftRemaining(true);
+                  setUseRecoveryDays(false);
+                  setShiftModal(day);
+                }}
+                onMove={() => {
+                  setMoveModal(day);
+                  setMoveTarget(day.dateIso);
+                }}
+                onReset={() => runAction(`reset-${day.dateIso}`, () => resetPlanDay(day))}
+                onOpenMenu={() => setMenuDay(day)}
+              />
+            ))}
+          </div>
+
+          {state.weeklyPlan.length === 0 ? <StateCard title="No weekly plan" message="No templates found." /> : null}
           {error ? <StateCard title="Plan error" message={error} tone="error" /> : null}
         </div>
       </SectionCard>
@@ -166,18 +143,10 @@ export function PlanPage() {
               <span>Allow recovery or walking days to be used as targets.</span>
             </label>
             <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShiftModal(null)}
-                className="fd-button-secondary min-h-11 px-4"
-              >
+              <button type="button" onClick={() => setShiftModal(null)} className="fd-button-secondary min-h-11 px-4">
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={() => void confirmShift()}
-                className="fd-button-accent min-h-11 px-4"
-              >
+              <button type="button" onClick={() => void confirmShift()} className="fd-button-accent min-h-11 px-4">
                 Confirm shift
               </button>
             </div>
@@ -185,7 +154,7 @@ export function PlanPage() {
         </ModalShell>
       ) : null}
 
-      {moveModal && snapshot ? (
+      {moveModal ? (
         <ModalShell title="Move to another day" onClose={() => setMoveModal(null)}>
           <div className="space-y-4 text-sm text-muted">
             <p>
@@ -193,12 +162,8 @@ export function PlanPage() {
             </p>
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-muted">Target day</span>
-              <select
-                value={moveTarget}
-                onChange={(event) => setMoveTarget(event.target.value)}
-                className="fd-input"
-              >
-                {snapshot.days.map((day) => (
+              <select value={moveTarget} onChange={(event) => setMoveTarget(event.target.value)} className="fd-input">
+                {state.weeklyPlan.map((day) => (
                   <option key={day.dateIso} value={day.dateIso}>
                     {format(day.date, 'EEEE, MMM d')}
                   </option>
@@ -206,20 +171,79 @@ export function PlanPage() {
               </select>
             </label>
             <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setMoveModal(null)}
-                className="fd-button-secondary min-h-11 px-4"
-              >
+              <button type="button" onClick={() => setMoveModal(null)} className="fd-button-secondary min-h-11 px-4">
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={() => void confirmMove()}
-                className="fd-button-accent min-h-11 px-4"
-              >
+              <button type="button" onClick={() => void confirmMove()} className="fd-button-accent min-h-11 px-4">
                 Confirm move
               </button>
+            </div>
+          </div>
+        </ModalShell>
+      ) : null}
+
+      {menuDay ? (
+        <ModalShell title={menuDay.name} onClose={() => setMenuDay(null)} mobileSheet>
+          <div className="space-y-4 text-sm text-muted">
+            <p className="helper-text">{`Day ${menuDay.dayNumber} · ${format(menuDay.date, 'EEEE, MMM d')}`}</p>
+            <div className="space-y-2">
+              <MobileMenuButton
+                label={menuDay.isRest ? 'Mark walk complete' : 'Mark complete'}
+                icon={<Check className="h-4 w-4" />}
+                disabled={busyKey?.includes(menuDay.dateIso) ?? false}
+                onClick={() => {
+                  setMenuDay(null);
+                  void runAction(`complete-${menuDay.dateIso}`, () => markPlanDayStatus(menuDay, 'completed'));
+                }}
+              />
+              {!menuDay.isRest ? (
+                <MobileMenuButton
+                  label="Skip"
+                  icon={<SkipForward className="h-4 w-4" />}
+                  disabled={busyKey?.includes(menuDay.dateIso) ?? false}
+                  onClick={() => {
+                    setMenuDay(null);
+                    void handleSkip(menuDay);
+                  }}
+                />
+              ) : null}
+              {!menuDay.isRest ? (
+                <MobileMenuButton
+                  label="Shift forward"
+                  icon={<Shuffle className="h-4 w-4" />}
+                  disabled={busyKey?.includes(menuDay.dateIso) ?? false}
+                  onClick={() => {
+                    setMenuDay(null);
+                    setShiftRemaining(true);
+                    setUseRecoveryDays(false);
+                    setShiftModal(menuDay);
+                  }}
+                />
+              ) : null}
+              {!menuDay.isRest ? (
+                <MobileMenuButton
+                  label="Move to another day"
+                  icon={<ArrowRightLeft className="h-4 w-4" />}
+                  disabled={busyKey?.includes(menuDay.dateIso) ?? false}
+                  onClick={() => {
+                    setMenuDay(null);
+                    setMoveModal(menuDay);
+                    setMoveTarget(menuDay.dateIso);
+                  }}
+                />
+              ) : null}
+              <MobileMenuButton
+                label="Reset day"
+                icon={<RotateCcw className="h-4 w-4" />}
+                disabled={busyKey?.includes(menuDay.dateIso) ?? false}
+                onClick={() => {
+                  const confirmed = window.confirm('Reset this day? This will clear completion for this day.');
+                  if (confirmed) {
+                    setMenuDay(null);
+                    void runAction(`reset-${menuDay.dateIso}`, () => resetPlanDay(menuDay));
+                  }
+                }}
+              />
             </div>
           </div>
         </ModalShell>
@@ -230,15 +254,20 @@ export function PlanPage() {
 
 function PlanDayCard({
   day,
+  isCurrent,
+  isNext,
   busy,
   onStart,
   onComplete,
   onSkip,
   onShift,
   onMove,
-  onReset
+  onReset,
+  onOpenMenu
 }: {
-  day: PlanDay;
+  day: FitnessDeskPlanDay;
+  isCurrent: boolean;
+  isNext: boolean;
   busy: boolean;
   onStart: () => void;
   onComplete: () => void;
@@ -246,90 +275,123 @@ function PlanDayCard({
   onShift: () => void;
   onMove: () => void;
   onReset: () => void;
+  onOpenMenu: () => void;
 }) {
   const dayMedia = getDayCoverMedia(day.cycleDay.dayNumber);
+  const primaryLabel = getPrimaryActionLabel(day, isCurrent);
 
   return (
-    <div className={['rounded-3xl border p-4 shadow-float', day.isRest ? 'border-line bg-card' : 'border-line bg-white'].join(' ')}>
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">{format(day.date, 'EEEE, MMMM d')}</p>
-            <StatusPill status={day.status} />
-            {day.isRest ? <Pill>Recovery / walking</Pill> : <Pill>Structured day</Pill>}
-          </div>
-          <p className="text-xl font-semibold text-teal">{`Day ${day.cycleDay.dayNumber}`}</p>
-          <p className="text-2xl font-semibold text-teal">{day.name}</p>
-          <p className="text-sm leading-6 text-muted">{day.focus}</p>
-          <p className="text-sm font-medium text-teal">Estimated duration: {day.durationMinutes} minutes</p>
-          <MediaFrame
-            src={dayMedia.imageUrl}
-            alt={dayMedia.alt}
-            wrapperClassName="mt-3 h-28 w-full max-w-sm rounded-[20px] md:h-32"
-            imageClassName="h-full w-full object-cover"
-            imageStyle={{ objectPosition: dayMedia.objectPosition }}
-          />
-        </div>
+    <ScheduleCard
+      eyebrow={format(day.date, 'EEE, MMM d')}
+      dayLabel={`Day ${day.cycleDay.dayNumber}`}
+      date={day.dateIso}
+      title={day.name}
+      focus={day.focus}
+      duration={`${day.durationMin} min`}
+      badges={[
+        <StatusPill key="status" status={day.status} />,
+        <Badge key="type" variant={day.isRest ? 'rest' : 'structured'}>
+          {day.isRest ? 'Rest' : 'Structured day'}
+        </Badge>,
+        isCurrent ? <Badge key="current" variant="ready">Current</Badge> : null,
+        !isCurrent && isNext ? <Badge key="next" variant="planned">Next</Badge> : null
+      ]}
+      image={{
+        src: dayMedia.imageUrl,
+        alt: dayMedia.alt,
+        objectPosition: dayMedia.objectPosition
+      }}
+      primaryAction={<PrimaryPlanAction day={day} label={primaryLabel} busy={busy} onStart={onStart} onComplete={onComplete} />}
+      menuAction={
+        <IconButton aria-label={`More actions for ${day.name}`} onClick={onOpenMenu}>
+          <MoreHorizontal className="h-4 w-4" />
+        </IconButton>
+      }
+      className={isCurrent ? 'border-teal/20 shadow-card' : ''}
+    />
+  );
+}
 
-        <div className="flex flex-wrap gap-2 xl:max-w-sm xl:justify-end">
-          <div className="hidden md:flex md:flex-wrap md:gap-2 xl:max-w-sm xl:justify-end">
-            <ActionButton icon={<Play className="h-4 w-4" />} label="Start" disabled={busy || day.isRest} onClick={onStart} />
-            <ActionButton icon={<Check className="h-4 w-4" />} label="Mark complete" disabled={busy || day.isRest} onClick={onComplete} />
-            <ActionButton icon={<SkipForward className="h-4 w-4" />} label="Skip" disabled={busy || day.isRest} onClick={onSkip} />
-            <ActionButton icon={<Shuffle className="h-4 w-4" />} label="Shift forward" disabled={busy || day.isRest} onClick={onShift} />
-            <ActionButton icon={<ArrowRightLeft className="h-4 w-4" />} label="Move to another day" disabled={busy || day.isRest} onClick={onMove} />
-            <ActionButton icon={<RotateCcw className="h-4 w-4" />} label="Reset day" disabled={busy || !day.scheduledWorkout} onClick={onReset} />
-            {day.status === 'planned' && !day.isRest ? (
-              <Link
-                to={`/workout?date=${day.dateIso}`}
-                className="fd-button-accent min-h-11 gap-2 px-4"
-              >
-                <CalendarDays className="h-4 w-4" />
-                Open workout
-              </Link>
-            ) : null}
-          </div>
-          <div className="flex w-full items-center gap-2 md:hidden">
-            {day.isRest ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onComplete}
-                className="fd-button-accent min-h-11 flex-1 gap-2 px-4 disabled:opacity-50"
-              >
-                <Check className="h-4 w-4" />
-                Mark walk complete
-              </button>
-            ) : day.status === 'planned' ? (
-              <Link to={`/workout?date=${day.dateIso}`} className="fd-button-accent min-h-11 flex-1 gap-2 px-4">
-                <CalendarDays className="h-4 w-4" />
-                Open workout
-              </Link>
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onStart}
-                className="fd-button-accent min-h-11 flex-1 gap-2 px-4 disabled:opacity-50"
-              >
-                <Play className="h-4 w-4" />
-                Start
-              </button>
-            )}
-            <details className="relative">
-              <summary className="fd-button-secondary min-h-11 list-none px-3">
-                <MoreHorizontal className="h-4 w-4" />
-              </summary>
-              <div className="absolute right-0 top-14 z-20 w-56 rounded-2xl border border-line bg-white p-2 shadow-card">
-                <MobileMenuButton label="Mark complete" icon={<Check className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onComplete} />
-                <MobileMenuButton label="Skip" icon={<SkipForward className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onSkip} />
-                <MobileMenuButton label="Shift forward" icon={<Shuffle className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onShift} />
-                <MobileMenuButton label="Move day" icon={<ArrowRightLeft className="h-4 w-4" />} disabled={busy || day.isRest} onClick={onMove} />
-                <MobileMenuButton label="Reset day" icon={<RotateCcw className="h-4 w-4" />} disabled={busy || !day.scheduledWorkout} onClick={onReset} />
+function PrimaryPlanAction({
+  day,
+  label,
+  busy,
+  onStart,
+  onComplete
+}: {
+  day: FitnessDeskPlanDay;
+  label: string;
+  busy: boolean;
+  onStart: () => void;
+  onComplete: () => void;
+}) {
+  if (day.isRest) {
+    return (
+      <button type="button" disabled={busy} onClick={onComplete} className="fd-button-accent min-h-11 w-full gap-2 px-4 xl:w-auto disabled:opacity-50">
+        <Check className="h-4 w-4" />
+        {label}
+      </button>
+    );
+  }
+
+  if (day.status === 'completed') {
+    return (
+      <Link to={`/workout?date=${day.dateIso}`} className="fd-button-secondary min-h-11 w-full gap-2 px-4 xl:w-auto">
+        <CalendarDays className="h-4 w-4" />
+        {label}
+      </Link>
+    );
+  }
+
+  if (label === 'Start Session') {
+    return (
+      <button type="button" disabled={busy} onClick={onStart} className="fd-button-accent min-h-11 w-full gap-2 px-4 xl:w-auto disabled:opacity-50">
+        <Play className="h-4 w-4" />
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <Link to={`/workout?date=${day.dateIso}`} className="fd-button-accent min-h-11 w-full gap-2 px-4 xl:w-auto">
+      <CalendarDays className="h-4 w-4" />
+      {label}
+    </Link>
+  );
+}
+
+function WeekOverviewStrip({
+  weeklyPlan,
+  currentSessionId
+}: {
+  weeklyPlan: FitnessDeskPlanDay[];
+  currentSessionId: string;
+}) {
+  return (
+    <div className="-mx-1 overflow-x-auto pb-1">
+      <div className="flex min-w-max gap-2 px-1">
+        {weeklyPlan.map((day) => {
+          const isCurrent = day.id === currentSessionId;
+          return (
+            <Card
+              key={day.id}
+              className={[
+                'min-w-[104px] space-y-2 px-4 py-3',
+                isCurrent ? 'border-teal/20 bg-teal text-white' : ''
+              ].join(' ')}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className={isCurrent ? 'text-xs font-semibold uppercase tracking-[0.18em] text-white/72' : 'text-xs font-semibold uppercase tracking-[0.18em] text-muted'}>
+                  D{day.dayNumber}
+                </p>
+                <span className={getOverviewDotClass(day, isCurrent)} />
               </div>
-            </details>
-          </div>
-        </div>
+              <p className={isCurrent ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-teal'}>
+                {getShortDayName(day)}
+              </p>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
@@ -341,7 +403,7 @@ function MobileMenuButton({
   disabled,
   onClick
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   disabled: boolean;
   onClick: () => void;
@@ -351,31 +413,7 @@ function MobileMenuButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-teal disabled:opacity-50"
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-function ActionButton({
-  icon,
-  label,
-  disabled,
-  onClick
-}: {
-  icon: React.ReactNode;
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-line bg-card px-4 text-sm font-semibold text-teal disabled:opacity-50"
+      className="flex min-h-11 w-full items-center gap-3 rounded-2xl border border-line bg-field px-4 text-sm font-semibold text-teal disabled:opacity-50"
     >
       {icon}
       {label}
@@ -385,7 +423,9 @@ function ActionButton({
 
 function StatusPill({ status }: { status: PlanStatus }) {
   const styles: Record<PlanStatus, string> = {
+    ready: 'border-[rgba(188,255,0,0.28)] bg-[rgba(188,255,0,0.14)] text-teal',
     planned: 'border-line bg-field text-teal',
+    in_progress: 'border-teal/20 bg-[rgba(6,20,20,0.08)] text-teal',
     completed: 'border-teal/20 bg-teal text-white',
     skipped: 'border-gold/30 bg-gold/20 text-teal',
     shifted: 'border-gold/25 bg-gold/12 text-teal',
@@ -399,15 +439,17 @@ function StatusPill({ status }: { status: PlanStatus }) {
 function ModalShell({
   title,
   children,
-  onClose
+  onClose,
+  mobileSheet = false
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   onClose: () => void;
+  mobileSheet?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-teal/25 px-4">
-      <div className="w-full max-w-xl rounded-panel border border-line bg-card p-6 shadow-card">
+    <div className={mobileSheet ? 'fixed inset-0 z-40 flex items-end justify-center bg-teal/25 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] md:items-center md:pb-4' : 'fixed inset-0 z-40 flex items-center justify-center bg-teal/25 px-4'}>
+      <div className={mobileSheet ? 'w-full max-w-xl rounded-[28px] border border-line bg-card p-6 shadow-card md:rounded-panel' : 'w-full max-w-xl rounded-panel border border-line bg-card p-6 shadow-card'}>
         <div className="mb-5 flex items-start justify-between gap-4">
           <h2 className="text-xl font-semibold text-teal">{title}</h2>
           <button type="button" onClick={onClose} className="text-sm font-semibold text-muted">
@@ -418,4 +460,33 @@ function ModalShell({
       </div>
     </div>
   );
+}
+
+function getPrimaryActionLabel(day: FitnessDeskPlanDay, isCurrent: boolean) {
+  if (day.isRest) {
+    return isCurrent ? 'Mark Walk Complete' : day.status === 'completed' ? 'Review' : 'Preview';
+  }
+
+  if (day.status === 'completed') return 'Review';
+  if (isCurrent || day.status === 'in_progress') return 'Start Session';
+  return 'Open Workout';
+}
+
+function getShortDayName(day: FitnessDeskPlanDay) {
+  if (day.dayNumber === 1) return 'Push';
+  if (day.dayNumber === 2) return 'Pull';
+  if (day.dayNumber === 3) return 'Legs';
+  if (day.dayNumber === 4) return 'Rest';
+  if (day.dayNumber === 5) return 'Upper';
+  if (day.dayNumber === 6) return 'Run';
+  return 'Rest';
+}
+
+function getOverviewDotClass(day: FitnessDeskPlanDay, isCurrent: boolean) {
+  if (isCurrent) return 'h-2.5 w-2.5 rounded-full bg-gold';
+  if (day.status === 'completed') return 'h-2.5 w-2.5 rounded-full bg-teal';
+  if (day.isRest) return 'h-2.5 w-2.5 rounded-full bg-line';
+  if (day.status === 'planned') return 'h-2.5 w-2.5 rounded-full bg-muted';
+  if (day.status === 'ready' || day.status === 'in_progress') return 'h-2.5 w-2.5 rounded-full bg-gold';
+  return 'h-2.5 w-2.5 rounded-full bg-gold/50';
 }

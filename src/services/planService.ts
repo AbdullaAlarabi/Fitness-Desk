@@ -2,7 +2,7 @@ import { addDays, format, isBefore } from 'date-fns';
 import { WORKSPACE_ID } from '../lib/constants';
 import { getSupabaseClient } from '../lib/supabaseClient';
 import { getAppNow } from '../lib/appClock';
-import type { ScheduledWorkoutRow, WorkoutTemplateRow } from '../types/database';
+import type { ScheduledWorkoutRow, WorkoutSessionRow, WorkoutTemplateRow } from '../types/database';
 import { getTrainingCycleStart, getWorkoutPlanDayForDate, type WorkoutPlanDayConfig } from '../data/workout-plan';
 import { getFitnessDeskState, type FitnessDeskPlanDay } from './fitnessDeskState';
 
@@ -13,6 +13,7 @@ export type PlanDay = {
   dateIso: string;
   template: WorkoutTemplateRow | null;
   scheduledWorkout: ScheduledWorkoutRow | null;
+  session: WorkoutSessionRow | null;
   cycleDay: WorkoutPlanDayConfig;
   name: string;
   focus: string;
@@ -46,6 +47,7 @@ export async function getPlanWeekSnapshot(now = getAppNow()): Promise<PlanWeekSn
     dateIso: day.dateIso,
     template: day.template,
     scheduledWorkout: day.scheduledWorkout,
+    session: day.session,
     cycleDay: day.cycleDay,
     name: day.name,
     focus: day.focus,
@@ -78,15 +80,44 @@ export async function markPlanDayStatusByDate(dateIso: string, status: Exclude<P
 }
 
 export async function resetPlanDay(day: PlanDay) {
-  if (!day.scheduledWorkout) return;
   const client = getSupabaseClient();
-  const result = await client
+  const sessionsResult = await client
+    .from('workout_sessions')
+    .select('id')
+    .eq('workspace_id', WORKSPACE_ID)
+    .eq('session_date', day.dateIso);
+
+  if (sessionsResult.error) throw sessionsResult.error;
+
+  const sessionIds = ((sessionsResult.data as Array<{ id: string }> | null) ?? []).map((session) => session.id);
+
+  if (sessionIds.length > 0) {
+    const deleteSessions = await client
+      .from('workout_sessions')
+      .delete()
+      .eq('workspace_id', WORKSPACE_ID)
+      .in('id', sessionIds);
+
+    if (deleteSessions.error) throw deleteSessions.error;
+  }
+
+  const deleteRuns = await client
+    .from('running_sessions')
+    .delete()
+    .eq('workspace_id', WORKSPACE_ID)
+    .eq('session_date', day.dateIso);
+
+  if (deleteRuns.error) throw deleteRuns.error;
+
+  if (!day.scheduledWorkout) return;
+
+  const deleteScheduled = await client
     .from('scheduled_workouts')
     .delete()
     .eq('workspace_id', WORKSPACE_ID)
     .eq('id', day.scheduledWorkout.id);
 
-  if (result.error) throw result.error;
+  if (deleteScheduled.error) throw deleteScheduled.error;
 }
 
 export async function movePlanDay(day: PlanDay, targetDateIso: string) {
@@ -199,6 +230,7 @@ function derivePlanDay(
     dateIso,
     template,
     scheduledWorkout,
+    session: null,
     cycleDay: fallbackConfig,
     name: displayName,
     focus: displayFocus,

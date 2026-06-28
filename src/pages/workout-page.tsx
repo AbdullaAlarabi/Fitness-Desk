@@ -23,6 +23,7 @@ import {
   type RunningSessionType
 } from '../services/runningServices';
 import { getDayCoverMedia, getExerciseDemoPlaceholder } from '../data/mediaManifest';
+import { getAppNow } from '../lib/appClock';
 import { assetUrl } from '../lib/assets';
 import {
   completeWorkoutSession,
@@ -207,7 +208,7 @@ export function WorkoutPage() {
       await completeWorkoutSession({
         sessionId: snapshot.session.id,
         scheduledWorkoutId: snapshot.scheduledWorkout?.id ?? null,
-        durationMinutes: calculateDurationMinutes(snapshot.session.created_at),
+        durationMinutes: calculateSessionDurationMinutes(snapshot.session.duration_minutes, snapshot.session.created_at),
         notes: sessionNotes || null
       });
       setSuccess('Workout complete.');
@@ -257,7 +258,7 @@ export function WorkoutPage() {
       await completeWorkoutSession({
         sessionId: snapshot.session.id,
         scheduledWorkoutId: snapshot.scheduledWorkout?.id ?? null,
-        durationMinutes: calculateDurationMinutes(snapshot.session.created_at),
+        durationMinutes: calculateSessionDurationMinutes(snapshot.session.duration_minutes, snapshot.session.created_at),
         notes: sessionNotes || null
       });
       setSuccess('Run saved.');
@@ -613,7 +614,7 @@ export function WorkoutPage() {
                 </p>
                 <p className="mt-1 text-xs font-medium text-muted">
                   Exercise {exerciseIndex + 1} of {snapshot.exercises.length} · In progress
-                  {snapshot.session?.created_at ? ` · ${calculateDurationMinutes(snapshot.session.created_at)} min` : ''}
+                  {snapshot.session?.created_at ? ` · ${calculateSessionDurationMinutes(snapshot.session.duration_minutes, snapshot.session.created_at)} min` : ''}
                 </p>
               </div>
               <div className="shrink-0 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold text-teal">
@@ -815,7 +816,7 @@ export function WorkoutPage() {
               <MiniMeta label="Exercises completed" value={`${snapshot.exercises.length} / ${snapshot.exercises.length}`} />
               <MiniMeta label="Sets completed" value={`${completedSetCount} / ${totalSets}`} />
               <MiniMeta label="Total volume" value={`${calculateTotalVolume(snapshot.exercises)} kg`} />
-              <MiniMeta label="Duration" value={`${calculateDurationMinutes(snapshot.session.created_at)} min`} />
+              <MiniMeta label="Duration" value={`${calculateSessionDurationMinutes(snapshot.session.duration_minutes, snapshot.session.created_at)} min`} />
             </div>
             <Card className="space-y-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Progression guidance</p>
@@ -1150,9 +1151,14 @@ function formatSeconds(seconds: number) {
   return `${mins}:${remainder.toString().padStart(2, '0')}`;
 }
 
-function calculateDurationMinutes(createdAt: string) {
-  const elapsedMs = Date.now() - new Date(createdAt).getTime();
-  return Math.max(1, Math.round(elapsedMs / 60000));
+function calculateSessionDurationMinutes(savedDurationMinutes: number | null | undefined, createdAt: string) {
+  if (typeof savedDurationMinutes === 'number' && Number.isFinite(savedDurationMinutes) && savedDurationMinutes > 0) {
+    return Math.round(savedDurationMinutes);
+  }
+
+  const elapsedMs = getAppNow().getTime() - new Date(createdAt).getTime();
+  const elapsedMinutes = Math.round(elapsedMs / 60000);
+  return Math.max(1, Math.min(180, elapsedMinutes));
 }
 
 function calculateTotalVolume(exercises: WorkoutExerciseStep[]) {

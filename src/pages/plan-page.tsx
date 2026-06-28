@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowRightLeft, CalendarDays, Check, MoreHorizontal, Play, RotateCcw, Shuffle, SkipForward } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { Badge, Card, IconButton, ScheduleCard, SectionCard, StateCard } from '../components/ui';
 import { getDayCoverMedia } from '../data/mediaManifest';
@@ -18,6 +18,7 @@ import { useFitnessDeskState } from '../state/fitnessDeskState';
 
 export function PlanPage() {
   const { state, refresh } = useFitnessDeskState();
+  const navigate = useNavigate();
   const [error, setError] = useState('');
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [menuDay, setMenuDay] = useState<FitnessDeskPlanDay | null>(null);
@@ -33,10 +34,19 @@ export function PlanPage() {
     try {
       await action();
       await refresh();
+      return true;
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : 'Plan action failed.');
+      return false;
     } finally {
       setBusyKey(null);
+    }
+  }
+
+  async function handleStart(day: FitnessDeskPlanDay) {
+    const succeeded = await runAction(`start-${day.dateIso}`, () => startPlanDay(day));
+    if (succeeded) {
+      navigate(`/workout?date=${day.dateIso}`);
     }
   }
 
@@ -95,7 +105,7 @@ export function PlanPage() {
                 isCurrent={day.id === state.currentSessionId}
                 isNext={day.id === state.nextSession.id}
                 busy={busyKey?.includes(day.dateIso) ?? false}
-                onStart={() => runAction(`start-${day.dateIso}`, () => startPlanDay(day))}
+                onStart={() => void handleStart(day)}
                 onComplete={() => runAction(`complete-${day.dateIso}`, () => markPlanDayStatus(day, 'completed'))}
                 onSkip={() => void handleSkip(day)}
                 onShift={() => {
@@ -343,7 +353,7 @@ function PrimaryPlanAction({
     );
   }
 
-  if (label === 'Start Session') {
+  if (label === 'Start Session' || label === 'Continue Session') {
     return (
       <button type="button" disabled={busy} onClick={onStart} className="fd-button-accent min-h-11 w-full gap-2 px-4 xl:w-auto disabled:opacity-50">
         <Play className="h-4 w-4" />
@@ -468,7 +478,8 @@ function getPrimaryActionLabel(day: FitnessDeskPlanDay, isCurrent: boolean) {
   }
 
   if (day.status === 'completed') return 'Review';
-  if (isCurrent || day.status === 'in_progress') return 'Start Session';
+  if (day.status === 'in_progress') return 'Continue Session';
+  if (isCurrent) return 'Start Session';
   return 'Open Workout';
 }
 

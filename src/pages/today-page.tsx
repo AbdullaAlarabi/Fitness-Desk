@@ -123,7 +123,7 @@ export function TodayPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_340px]">
         <div className="space-y-4">
           <MissionCard

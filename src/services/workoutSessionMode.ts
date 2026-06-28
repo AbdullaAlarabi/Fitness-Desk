@@ -39,6 +39,7 @@ export type WorkoutExerciseStep = {
   mediaFullUrl: string | null;
   mediaType: 'image' | 'gif' | 'video_placeholder';
   mediaAlt: string;
+  mediaStatus: 'approved' | 'placeholder';
   log: WorkoutExerciseLogRow | null;
   setLogs: WorkoutSetLogRow[];
 };
@@ -92,7 +93,8 @@ export async function getWorkoutModeSnapshot(dateIso = format(getAppNow(), 'yyyy
 
   const templates = (templateResult.data as WorkoutTemplateRow[]) ?? [];
   const scheduledWorkout = (scheduledResult.data as ScheduledWorkoutRow | null) ?? null;
-  const session = ((sessionsResult.data as WorkoutSessionRow[]) ?? [])[0] ?? null;
+  const sessions = (sessionsResult.data as WorkoutSessionRow[]) ?? [];
+  const session = resolveVisibleWorkoutSession(dateIso, scheduledWorkout?.status ?? null, sessions);
 
   const template =
     (scheduledWorkout?.template_id
@@ -189,7 +191,8 @@ export async function getWorkoutModeSnapshot(dateIso = format(getAppNow(), 'yyyy
         (extractCoachField(exercise.notes, 'Media type') as WorkoutExerciseStep['mediaType'] | null) ??
         configExercise?.mediaType ??
         fallbackMedia.mediaType,
-      mediaAlt: extractCoachField(exercise.notes, 'Media alt') ?? configExercise?.mediaAlt ?? fallbackMedia.mediaAlt,
+      mediaAlt: extractCoachField(exercise.notes, 'Media alt') ?? fallbackMedia.mediaAlt ?? configExercise?.mediaAlt,
+      mediaStatus: fallbackMedia.mediaStatus,
       log,
       setLogs: log ? setLogs.filter((item) => item.workout_exercise_log_id === log.id) : []
     };
@@ -205,6 +208,25 @@ export async function getWorkoutModeSnapshot(dateIso = format(getAppNow(), 'yyyy
     workoutRules: sessionType === 'rest' ? restDayRules : workoutRules,
     exercises
   };
+}
+
+function resolveVisibleWorkoutSession(
+  dateIso: string,
+  scheduledStatus: string | null,
+  sessions: WorkoutSessionRow[]
+) {
+  const latestSession = sessions[0] ?? null;
+  if (!latestSession) return null;
+
+  const normalizedStatus = scheduledStatus?.toLowerCase() ?? null;
+  const todayIso = format(getAppNow(), 'yyyy-MM-dd');
+
+  if (dateIso === todayIso) return latestSession;
+  if (normalizedStatus === 'completed' || normalizedStatus === 'done' || normalizedStatus === 'in_progress') {
+    return latestSession;
+  }
+
+  return null;
 }
 
 export async function ensureWorkoutSession(dateIso = format(getAppNow(), 'yyyy-MM-dd')) {
@@ -343,20 +365,20 @@ export function getProgressionRecommendation(exercise: WorkoutExerciseStep): Pro
   if (allAtTop && lastWeight !== null) {
     return {
       tone: 'increase',
-      message: `Increase weight next time. All sets hit ${topRep} reps with clean entries.`
+      message: `Next time: increase weight. All sets hit ${topRep} reps.`
     };
   }
 
   if (anyBelowMin) {
     return {
       tone: 'reduce',
-      message: `Reduce weight slightly or repeat this load. One or more sets missed ${bottomRep} reps.`
+      message: `Next time: repeat or reduce weight. Some sets missed ${bottomRep} reps.`
     };
   }
 
   return {
     tone: 'hold',
-    message: 'Keep the same weight next time. Build clean reps until all sets reach the top range.'
+    message: 'Next time: keep the same weight.'
   };
 }
 

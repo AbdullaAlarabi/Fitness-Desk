@@ -337,7 +337,7 @@ export function WorkoutPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
       {isActiveGymWorkout ? (
         <div className="rounded-2xl border border-line bg-white px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between gap-3">
@@ -445,12 +445,20 @@ export function WorkoutPage() {
                 {snapshot.exercises.map((exercise, index) => (
                   <Card key={exercise.key} className="space-y-3">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="fd-label">{`Exercise ${index + 1}`}</p>
-                        <p className="card-title mt-2 text-teal">{exercise.exerciseName}</p>
-                        <p className="helper-text mt-2 text-muted">
-                          {exercise.targetMuscles ?? exercise.exerciseGroup ?? 'Target muscles set in workout plan'}
-                        </p>
+                      <div className="flex min-w-0 items-start gap-3">
+                        <MediaFrame
+                          src={resolveExerciseImageUrl(exercise.mediaThumbnailUrl)}
+                          alt={exercise.mediaAlt}
+                          wrapperClassName="h-16 w-16 shrink-0 rounded-2xl"
+                          imageClassName="h-full w-full object-cover"
+                        />
+                        <div className="min-w-0">
+                          <p className="fd-label">{`Exercise ${index + 1}`}</p>
+                          <p className="card-title mt-2 text-teal">{exercise.exerciseName}</p>
+                          <p className="helper-text mt-2 text-muted">
+                            {exercise.targetMuscles ?? exercise.exerciseGroup ?? 'Target muscles set in workout plan'}
+                          </p>
+                        </div>
                       </div>
                       <div className="shrink-0 text-right">
                         <p className="card-title text-teal">
@@ -467,6 +475,7 @@ export function WorkoutPage() {
                           rememberTriggerAnd(() => setShowDemo(true));
                         }}
                         aria-label={`Open demo for ${exercise.exerciseName}`}
+                        data-testid={`exercise-demo-button-${exercise.key}`}
                         className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm"
                       >
                         Demo
@@ -605,7 +614,7 @@ export function WorkoutPage() {
       ) : null}
 
       {snapshot && snapshot.sessionType === 'gym' && snapshot.session && !workoutComplete && currentExercise ? (
-        <section className="space-y-4 pb-28 lg:pb-0">
+        <section className="space-y-4 pb-[calc(var(--mobile-page-bottom-cta)+1rem)] lg:pb-0" data-testid="workout-active-player">
           <div className="sticky top-3 z-20 rounded-2xl border border-line bg-white px-4 py-3 shadow-card lg:top-4">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -626,17 +635,25 @@ export function WorkoutPage() {
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
             <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player">
               <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-4 sm:p-5 lg:space-y-5">
-                <div>
-                  <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
-                  <p className="mt-2 text-sm text-muted">{currentExercise.targetMuscles ?? currentExercise.exerciseGroup ?? 'Target muscles set in workout plan'}</p>
-                  <p className="mt-2 text-sm text-muted">
-                    <span className="lg:hidden">
-                      {currentExercise.setCount} × {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
-                    </span>
-                    <span className="hidden lg:inline">
-                      {currentExercise.setCount} sets · {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} reps · Rest {currentExercise.restSeconds}s
-                    </span>
-                  </p>
+                <div className="flex items-start gap-3">
+                  <MediaFrame
+                    src={resolveExerciseImageUrl(currentExercise.mediaThumbnailUrl)}
+                    alt={currentExercise.mediaAlt}
+                    wrapperClassName="h-16 w-16 shrink-0 rounded-2xl"
+                    imageClassName="h-full w-full object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
+                    <p className="mt-2 text-sm text-muted">{currentExercise.targetMuscles ?? currentExercise.exerciseGroup ?? 'Target muscles set in workout plan'}</p>
+                    <p className="mt-2 text-sm text-muted">
+                      <span className="lg:hidden">
+                        {currentExercise.setCount} × {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
+                      </span>
+                      <span className="hidden lg:inline">
+                        {currentExercise.setCount} sets · {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} reps · Rest {currentExercise.restSeconds}s
+                      </span>
+                    </p>
+                  </div>
                 </div>
 
                 <div className="rounded-2xl border border-line bg-card px-4 py-4">
@@ -723,7 +740,13 @@ export function WorkoutPage() {
 
                 <div className="flex flex-wrap gap-2">
                   <SmallButton onClick={() => rememberTriggerAnd(() => setShowCoachNotes(true))} ariaLabel={`Open details for ${currentExercise.exerciseName}`}>Coach notes</SmallButton>
-                  <SmallButton onClick={() => rememberTriggerAnd(() => setShowDemo(true))} ariaLabel={`Open demo for ${currentExercise.exerciseName}`}>Demo</SmallButton>
+                  <SmallButton
+                    onClick={() => rememberTriggerAnd(() => setShowDemo(true))}
+                    ariaLabel={`Open demo for ${currentExercise.exerciseName}`}
+                    data-testid={`exercise-demo-button-${currentExercise.key}`}
+                  >
+                    Demo
+                  </SmallButton>
                   <SmallButton onClick={() => setShowFullPlan(true)}>Full plan</SmallButton>
                 </div>
 
@@ -768,7 +791,7 @@ export function WorkoutPage() {
           </div>
 
           {completedSets < currentExercise.setCount ? (
-            <div className="fixed inset-x-0 bottom-[calc(6.4rem+env(safe-area-inset-bottom))] z-30 px-4 lg:hidden">
+            <div className="fixed inset-x-0 bottom-[calc(var(--mobile-page-bottom)+0.75rem)] z-30 px-4 lg:hidden">
               <button
                 type="button"
                 onClick={() => void handleSaveSet()}
@@ -920,6 +943,7 @@ export function WorkoutPage() {
           onClose={() => setShowDemo(false)}
           returnFocusEl={modalReturnFocusEl}
           maxWidthClassName="md:max-w-[960px]"
+          dataTestId="exercise-demo-modal"
         >
           <div className="space-y-4">
             {demoImageFailed ? (
@@ -931,6 +955,7 @@ export function WorkoutPage() {
                 <img
                   src={resolveExerciseImageUrl(currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? null)}
                   alt={currentExercise.mediaAlt}
+                  data-testid="exercise-demo-image"
                   className="mx-auto block h-auto max-h-[58vh] max-w-full object-contain md:max-h-[52vh]"
                   onError={() => setDemoImageFailed(true)}
                 />
@@ -970,13 +995,15 @@ function BottomSheet({
   onClose,
   children,
   returnFocusEl,
-  maxWidthClassName = 'md:max-w-[1040px]'
+  maxWidthClassName = 'md:max-w-[1040px]',
+  dataTestId
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   returnFocusEl?: HTMLElement | null;
   maxWidthClassName?: string;
+  dataTestId?: string;
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const titleId = 'workout-modal-title';
@@ -1041,6 +1068,7 @@ function BottomSheet({
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
+          data-testid={dataTestId}
           className="flex h-full flex-col rounded-t-[28px] border border-line bg-white shadow-card md:h-auto md:rounded-[28px]"
         >
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -1074,14 +1102,22 @@ function MiniMeta({ label, value }: { label: string; value: string }) {
 function SmallButton({
   children,
   onClick,
-  ariaLabel
+  ariaLabel,
+  dataTestId
 }: {
   children: React.ReactNode;
   onClick: () => void;
   ariaLabel?: string;
+  dataTestId?: string;
 }) {
   return (
-    <button type="button" onClick={onClick} aria-label={ariaLabel} className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      data-testid={dataTestId}
+      className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm"
+    >
       {children}
     </button>
   );
@@ -1156,8 +1192,21 @@ function calculateSessionDurationMinutes(savedDurationMinutes: number | null | u
     return Math.round(savedDurationMinutes);
   }
 
-  const elapsedMs = getAppNow().getTime() - new Date(createdAt).getTime();
+  const createdAtTime = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdAtTime)) {
+    return 60;
+  }
+
+  const elapsedMs = getAppNow().getTime() - createdAtTime;
   const elapsedMinutes = Math.round(elapsedMs / 60000);
+  if (!Number.isFinite(elapsedMinutes) || elapsedMinutes <= 0) {
+    return 60;
+  }
+
+  if (elapsedMinutes > 240) {
+    return 60;
+  }
+
   return Math.max(1, Math.min(180, elapsedMinutes));
 }
 
@@ -1174,9 +1223,11 @@ function calculateTotalVolume(exercises: WorkoutExerciseStep[]) {
 }
 
 function getWorkoutProgressionDetails(exercises: WorkoutExerciseStep[]) {
-  const recommendations = exercises.map((exercise) => getProgressionSuggestion(exercise)).filter(Boolean) as string[];
-  if (recommendations.length > 0) return recommendations;
-  return ['Keep weight next time. Build clean reps until all sets reach the top range.'];
+  const recommendations = Array.from(
+    new Set(exercises.map((exercise) => getProgressionSuggestion(exercise)).filter(Boolean) as string[])
+  );
+  if (recommendations.length > 0) return recommendations.slice(0, 3);
+  return ['Next time: keep the same weight.'];
 }
 
 function formatWorkoutStatus(status: string | null | undefined) {

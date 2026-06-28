@@ -16,6 +16,7 @@ export type WorkoutExerciseConfig = {
   mediaFullUrl: string;
   mediaType: 'image' | 'gif' | 'video_placeholder';
   mediaAlt: string;
+  mediaStatus?: 'approved' | 'placeholder';
 };
 
 export type WorkoutPlanDayConfig = {
@@ -353,8 +354,8 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaAlt: 'Leg press demo'
       },
       {
-        id: 'day3-seated-leg-curl',
-        name: 'Seated or Lying Leg Curl',
+        id: 'day3-lying-leg-curl-machine',
+        name: 'Lying Leg Curl Machine',
         category: 'curl',
         targetMuscles: 'Hamstrings',
         sets: 3,
@@ -369,7 +370,7 @@ export const workoutPlan: WorkoutPlanDayConfig[] = [
         mediaThumbnailUrl: 'coach-media/seated-leg-curl-thumb',
         mediaFullUrl: 'coach-media/seated-leg-curl-full',
         mediaType: 'image',
-        mediaAlt: 'Seated leg curl demo'
+        mediaAlt: 'Lying leg curl machine exercise demo'
       },
       {
         id: 'day3-leg-extension',

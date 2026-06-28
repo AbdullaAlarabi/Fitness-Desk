@@ -201,7 +201,7 @@ export function BodyPage() {
   }
 
   return (
-    <div className="space-y-6 pb-28 md:pb-10">
+    <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
       <Card className="space-y-2">
         <p className="fd-label">Body</p>
         <p className="section-title text-teal">Log weight daily. Run full scan weekly.</p>

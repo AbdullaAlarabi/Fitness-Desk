@@ -1,0 +1,314 @@
+[
+  {
+    "order": 1,
+    "exercise": "Incline Chest Press Machine",
+    "filename": "exercise_incline_machine_chest_press_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_incline_machine_chest_press_demo.png",
+    "source_file": "moody_gym_session_with_green_accents.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 2,
+    "exercise": "Seated Chest Press Machine",
+    "filename": "exercise_seated_chest_press_machine_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_seated_chest_press_machine_demo.png",
+    "source_file": "modern_gym_session_in_dramatic_lighting.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 3,
+    "exercise": "Pec Deck / Chest Fly Machine",
+    "filename": "exercise_pec_deck_chest_fly_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_pec_deck_chest_fly_demo.png",
+    "source_file": "dark_gym_focus_on_strength_training.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 4,
+    "exercise": "Machine Shoulder Press",
+    "filename": "exercise_machine_shoulder_press_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_machine_shoulder_press_demo.png",
+    "source_file": "moody_gym_session_with_neon_accents.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 5,
+    "exercise": "Machine Lateral Raise",
+    "filename": "exercise_machine_lateral_raise_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_machine_lateral_raise_demo.png",
+    "source_file": "focused_strength_training_in_modern_gym.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 6,
+    "exercise": "Rope Triceps Pushdown",
+    "filename": "exercise_rope_triceps_pushdown_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_rope_triceps_pushdown_demo.png",
+    "source_file": "neon_lit_gym_workout_session.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 7,
+    "exercise": "Wide-Grip Lat Pulldown",
+    "filename": "exercise_wide_grip_lat_pulldown_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_wide_grip_lat_pulldown_demo.png",
+    "source_file": "a_high_quality_realistic_studio_like_gym_scene.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 8,
+    "exercise": "Neutral-Grip Lat Pulldown",
+    "filename": "exercise_neutral_grip_lat_pulldown_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_neutral_grip_lat_pulldown_demo.png",
+    "source_file": "a_high_end_gym_interior_scene_dark_and_moody_with.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 9,
+    "exercise": "Chest-Supported Row Machine",
+    "filename": "exercise_chest_supported_row_machine_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_chest_supported_row_machine_demo.png",
+    "source_file": "a_high_quality_cinematic_gym_scene_in_a_dark_mod.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 10,
+    "exercise": "Seated Cable Row",
+    "filename": "exercise_seated_cable_row_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_seated_cable_row_demo.png",
+    "source_file": "a_high_resolution_cinematic_gym_scene_with_a_sing.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 11,
+    "exercise": "Straight-Arm Cable Pulldown",
+    "filename": "exercise_straight_arm_cable_pulldown_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_straight_arm_cable_pulldown_demo.png",
+    "source_file": "focused_workout_in_a_modern_gym.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 12,
+    "exercise": "Reverse Pec Deck",
+    "filename": "exercise_reverse_pec_deck_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_reverse_pec_deck_demo.png",
+    "source_file": "modern_gym_workout_in_dark_setting.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 13,
+    "exercise": "Face Pull",
+    "filename": "exercise_face_pull_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_face_pull_demo.png",
+    "source_file": "a_high_quality_cinematic_gym_scene_wide_vertical.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 14,
+    "exercise": "Machine Preacher Curl",
+    "filename": "exercise_machine_preacher_curl_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_machine_preacher_curl_demo.png",
+    "source_file": "a_high_quality_photograph_in_a_dark_modern_gym_o.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 15,
+    "exercise": "Overhead Cable Triceps Extension",
+    "filename": "exercise_overhead_cable_triceps_extension_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_overhead_cable_triceps_extension_demo.png",
+    "source_file": "a_high_quality_studio_like_gym_scene_overall_a_d.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 16,
+    "exercise": "Cable Hammer Curl",
+    "filename": "exercise_cable_hammer_curl_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_cable_hammer_curl_demo.png",
+    "source_file": "a_high_resolution_full_body_gym_scene_in_a_dark.png",
+    "source_size": {
+      "width": 1023,
+      "height": 1537
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 17,
+    "exercise": "Leg Press",
+    "filename": "exercise_leg_press_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_leg_press_demo.png",
+    "source_file": "focused_strength_in_a_modern_gym.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 18,
+    "exercise": "Leg Extension",
+    "filename": "exercise_leg_extension_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_leg_extension_demo.png",
+    "source_file": "modern_gym_with_leg_extension_machine.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 19,
+    "exercise": "Lying Leg Curl Machine",
+    "filename": "exercise_lying_leg_curl_machine_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_lying_leg_curl_machine_demo.png",
+    "source_file": "a_realistic_high_quality_vertical_gym_interior_s.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 20,
+    "exercise": "Calf Raise Machine",
+    "filename": "exercise_calf_raise_machine_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_calf_raise_machine_demo.png",
+    "source_file": "gym_session_in_moody_lighting.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 21,
+    "exercise": "Cable Crunch",
+    "filename": "exercise_cable_crunch_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_cable_crunch_demo.png",
+    "source_file": "intense_workout_in_moody_gym_setting.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 22,
+    "exercise": "Plank",
+    "filename": "exercise_plank_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_plank_demo.png",
+    "source_file": "intense_plank_in_modern_gym.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 23,
+    "exercise": "Captain Chair Knee Raise",
+    "filename": "exercise_captain_chair_knee_raise_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_captain_chair_knee_raise_demo.png",
+    "source_file": "a_photorealistic_high_resolution_vertical_gym_sce.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  },
+  {
+    "order": 24,
+    "exercise": "Pallof Press",
+    "filename": "exercise_pallof_press_demo.png",
+    "demo_path": "/media/training/exercises/demo/exercise_pallof_press_demo.png",
+    "source_file": "a_high_quality_photorealistic_gym_interior_scene.png",
+    "source_size": {
+      "width": 1024,
+      "height": 1536
+    },
+    "aspect_ratio": "2:3 vertical source poster",
+    "status": "approved"
+  }
+]

@@ -101,7 +101,7 @@ export function ProgressPage() {
   const recommendation = getNextRecommendation(appState, summary);
 
   return (
-    <div className="space-y-6 pb-28 md:pb-10">
+    <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
       <Card className="space-y-2">
         <p className="fd-label">Progress</p>
         <p className="section-title text-teal">Training, intake, body, and run trends.</p>

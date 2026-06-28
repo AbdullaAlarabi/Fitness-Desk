@@ -517,13 +517,14 @@ function resolveSessionStatus(input: {
   session: WorkoutSessionRow | null;
 }): FitnessDeskSessionStatus {
   const scheduledStatus = input.scheduledWorkout?.status?.toLowerCase() ?? null;
+  const isToday = format(input.date, 'yyyy-MM-dd') === format(input.today, 'yyyy-MM-dd');
 
   if (scheduledStatus === 'completed' || scheduledStatus === 'done') return 'completed';
   if (scheduledStatus === 'skipped') return 'skipped';
   if (scheduledStatus === 'shifted') return 'shifted';
-  if (input.session && input.dayType === 'structured') return 'in_progress';
+  if (input.session && input.dayType === 'structured' && isToday) return 'in_progress';
   if (input.dayType === 'recovery') return 'rest';
-  if (format(input.date, 'yyyy-MM-dd') === format(input.today, 'yyyy-MM-dd')) return 'ready';
+  if (isToday) return 'ready';
   if (isBefore(input.date, startOfDay(input.today))) return 'missed';
   return 'planned';
 }

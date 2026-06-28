@@ -8,6 +8,13 @@ const SHOTS_DIR = path.join(OUTPUT_DIR, 'screenshots');
 const PDF_PATH = path.join(OUTPUT_DIR, 'fitness_desk_visual_qa_desktop_mobile.pdf');
 const REPORT_PATH = path.join(OUTPUT_DIR, 'report.json');
 const BASE_URL = process.env.VISUAL_QA_BASE_URL ?? 'http://127.0.0.1:5173/Fitness-Desk/';
+const WORKOUT_QA_HASHES = {
+  push: '/workout?date=2026-07-04',
+  pull: '/workout?date=2026-07-05',
+  legs: '/workout?date=2026-07-06',
+  core: '/workout?date=2026-07-09',
+  activeToday: '/workout?date=2026-06-29'
+};
 
 const VIEWPORTS = {
   desktop: { width: 1440, height: 1100 },
@@ -78,15 +85,12 @@ try {
     fullPage: true
   });
 
-  const startHash = '/workout';
-  let desktopActiveState = null;
-
   await captureRoute({
     page: desktopPage,
     name: 'Workout start screen',
     viewport: 'desktop',
     size: '1440 × 1100',
-    hash: startHash,
+    hash: WORKOUT_QA_HASHES.push,
     fullPage: true
   });
 
@@ -95,11 +99,56 @@ try {
     name: 'Workout start screen',
     viewport: 'mobile',
     size: '430 × 932',
-    hash: startHash,
+    hash: WORKOUT_QA_HASHES.push,
     fullPage: true
   });
 
-  desktopActiveState = await createActiveWorkoutState(desktopPage, startHash);
+  const desktopActiveState = await createActiveWorkoutState(desktopPage, WORKOUT_QA_HASHES.activeToday);
+
+  await captureDemoModal({
+    page: desktopPage,
+    name: 'Exercise demo modal',
+    viewport: 'desktop',
+    size: '1440 × 1100',
+    hash: WORKOUT_QA_HASHES.push,
+    buttonLabel: 'Open demo for Lateral Raise Machine or Cable Lateral Raise'
+  });
+
+  await captureDemoModal({
+    page: mobilePage,
+    name: 'Exercise demo modal',
+    viewport: 'mobile',
+    size: '430 × 932',
+    hash: WORKOUT_QA_HASHES.push,
+    buttonLabel: 'Open demo for Lateral Raise Machine or Cable Lateral Raise'
+  });
+
+  await captureDemoModal({
+    page: desktopPage,
+    name: 'Pull demo modal',
+    viewport: 'desktop',
+    size: '1440 × 1100',
+    hash: WORKOUT_QA_HASHES.pull,
+    buttonLabel: 'Open demo for Lat Pulldown, Wide or Neutral Grip'
+  });
+
+  await captureDemoModal({
+    page: desktopPage,
+    name: 'Legs core demo modal',
+    viewport: 'desktop',
+    size: '1440 × 1100',
+    hash: WORKOUT_QA_HASHES.legs,
+    buttonLabel: 'Open demo for Cable Crunch'
+  });
+
+  await captureDemoModal({
+    page: desktopPage,
+    name: 'Core stability demo modal',
+    viewport: 'desktop',
+    size: '1440 × 1100',
+    hash: WORKOUT_QA_HASHES.core,
+    buttonLabel: 'Open demo for Pallof Press or Plank'
+  });
 
   if (desktopActiveState) {
     await captureRoute({
@@ -119,30 +168,10 @@ try {
       hash: desktopActiveState.hash,
       fullPage: true
     });
-
-    await captureDemoModal({
-      page: desktopPage,
-      name: 'Exercise demo modal',
-      viewport: 'desktop',
-      size: '1440 × 1100',
-      hash: startHash
-    });
-
-    await captureDemoModal({
-      page: mobilePage,
-      name: 'Exercise demo modal',
-      viewport: 'mobile',
-      size: '430 × 932',
-      hash: startHash
-    });
   } else {
     report.skipped.push({
       name: 'Workout active/player screen',
-      reason: 'No existing active workout session was reachable without creating or modifying user data.'
-    });
-    report.skipped.push({
-      name: 'Exercise demo modal',
-      reason: 'Demo modal is only available from an active workout player, and no active session was reachable safely.'
+      reason: 'Could not enter active workout mode from the dedicated QA current-day route.'
     });
   }
 
@@ -151,7 +180,8 @@ try {
     name: 'Body page',
     viewport: 'desktop',
     size: '1440 × 1100',
-    hash: '/body'
+    hash: '/body',
+    fullPage: true
   });
 
   await captureRoute({
@@ -159,7 +189,8 @@ try {
     name: 'Body page',
     viewport: 'mobile',
     size: '430 × 932',
-    hash: '/body'
+    hash: '/body',
+    fullPage: true
   });
 
   await captureRoute({
@@ -167,7 +198,8 @@ try {
     name: 'Progress page',
     viewport: 'desktop',
     size: '1440 × 1100',
-    hash: '/progress'
+    hash: '/progress',
+    fullPage: true
   });
 
   await captureRoute({
@@ -175,7 +207,8 @@ try {
     name: 'Progress page',
     viewport: 'mobile',
     size: '430 × 932',
-    hash: '/progress'
+    hash: '/progress',
+    fullPage: true
   });
 
   await buildPdf(browser, report.captured);
@@ -199,8 +232,22 @@ async function captureRoute({ page, name, viewport, size, hash, fullPage = false
       document.activeElement.blur();
     }
   });
+  if (viewport === 'mobile' && fullPage) {
+    await page.evaluate(() => {
+      document.body.classList.add('qa-mobile-fullpage-capture');
+    });
+  } else {
+    await page.evaluate(() => {
+      document.body.classList.remove('qa-mobile-fullpage-capture');
+    });
+  }
   await page.waitForTimeout(150);
   await page.screenshot({ path: screenshotPath, fullPage, type: 'jpeg', quality: 88 });
+  if (viewport === 'mobile' && fullPage) {
+    await page.evaluate(() => {
+      document.body.classList.remove('qa-mobile-fullpage-capture');
+    });
+  }
   report.captured.push({
     screenName: name,
     route: `${BASE_URL}#${hash.startsWith('/') ? hash : `/${hash}`}`,
@@ -213,9 +260,9 @@ async function captureRoute({ page, name, viewport, size, hash, fullPage = false
   });
 }
 
-async function captureDemoModal({ page, name, viewport, size, hash }) {
+async function captureDemoModal({ page, name, viewport, size, hash, buttonLabel }) {
   await openHashRoute(page, hash);
-  const demoButton = page.getByRole('button', { name: /^Demo$/i }).first();
+  const demoButton = page.getByRole('button', { name: buttonLabel }).first();
   await demoButton.scrollIntoViewIfNeeded().catch(() => undefined);
   const visible = await demoButton.isVisible().catch(() => false);
   if (!visible) {
@@ -228,7 +275,7 @@ async function captureDemoModal({ page, name, viewport, size, hash }) {
     return;
   }
   await demoButton.click();
-  await page.getByRole('dialog').waitFor({ state: 'visible', timeout: 5000 });
+  await page.getByTestId('exercise-demo-modal').waitFor({ state: 'visible', timeout: 5000 });
   await page.waitForTimeout(250);
   await waitForImages(page);
 
@@ -245,6 +292,14 @@ async function captureDemoModal({ page, name, viewport, size, hash }) {
     appReady: true,
     notes: 'Modal open state.'
   });
+
+  const closeButton = page.locator('[data-modal-close="true"]').first();
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click().catch(() => undefined);
+  } else {
+    await page.keyboard.press('Escape').catch(() => undefined);
+  }
+  await page.waitForTimeout(150);
 }
 
 async function isStartWorkoutScreen(page) {
@@ -259,6 +314,11 @@ async function isActiveWorkoutScreen(page) {
 
 async function createActiveWorkoutState(page, startHash) {
   await openHashRoute(page, startHash, { tolerateErrors: true });
+  if (await isActiveWorkoutScreen(page)) {
+    report.notes.push(`Reused existing active workout state from ${startHash} for QA capture.`);
+    return { hash: startHash, iso: null };
+  }
+
   const startButton = page.getByRole('button', { name: /Start Session/i }).first();
   const visible = await startButton.isVisible().catch(() => false);
   if (!visible) {
@@ -266,9 +326,18 @@ async function createActiveWorkoutState(page, startHash) {
     return null;
   }
 
+  await startButton.scrollIntoViewIfNeeded().catch(() => undefined);
   await startButton.click();
   await page.waitForLoadState('networkidle').catch(() => undefined);
-  await page.waitForTimeout(800);
+  await page.waitForFunction(
+    () => {
+      const text = document.body.innerText;
+      return /Save Set|Run logger|Session completed/i.test(text);
+    },
+    null,
+    { timeout: 7000 }
+  ).catch(() => undefined);
+  await page.waitForTimeout(1200);
   const active = await isActiveWorkoutScreen(page);
   if (!active) {
     report.notes.push('Tried to enter active workout mode through the UI, but the active player did not appear.');
@@ -282,11 +351,17 @@ async function createActiveWorkoutState(page, startHash) {
 async function openHashRoute(page, hash, options = {}) {
   const url = `${BASE_URL}#${hash.startsWith('/') ? hash : `/${hash}`}`;
   await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await ensureQaCaptureStyles(page);
   await page.locator('[data-app-ready="true"]').waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
   await page.waitForLoadState('networkidle').catch(() => undefined);
   await page.evaluate(() => document.fonts?.ready ?? Promise.resolve());
   await page.waitForFunction(() => document.querySelectorAll('.animate-pulse').length === 0, null, { timeout: 8000 }).catch(() => undefined);
   await page.waitForTimeout(350);
+  const lingeringModalClose = page.locator('[data-modal-close="true"]').first();
+  if (await lingeringModalClose.isVisible().catch(() => false)) {
+    await lingeringModalClose.click().catch(() => undefined);
+    await page.waitForTimeout(150);
+  }
   await waitForImages(page);
 
   if (!options.tolerateErrors) {
@@ -308,6 +383,33 @@ async function waitForImages(page) {
           })
       )
     );
+  });
+}
+
+async function ensureQaCaptureStyles(page) {
+  await page.evaluate(() => {
+    if (document.getElementById('qa-capture-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'qa-capture-styles';
+    style.textContent = `
+      body.qa-mobile-fullpage-capture .app-shell {
+        position: relative !important;
+        padding-bottom: calc(var(--mobile-page-bottom) + 24px) !important;
+      }
+
+      body.qa-mobile-fullpage-capture .fd-shell-mobile-nav,
+      body.qa-mobile-fullpage-capture .mobile-tabbar {
+        position: absolute !important;
+        inset: auto 0 0 0 !important;
+      }
+
+      body.qa-mobile-fullpage-capture .fd-shell-root,
+      body.qa-mobile-fullpage-capture .app-shell-root {
+        padding-bottom: calc(var(--mobile-page-bottom) + 24px) !important;
+      }
+    `;
+    document.head.appendChild(style);
   });
 }
 
@@ -338,18 +440,18 @@ async function buildPdf(browser, captures) {
       <head>
         <meta charset="utf-8" />
         <style>
-          @page { size: A4 landscape; margin: 12mm; }
+          @page { size: A4; margin: 12mm; }
           body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f1ea; color: #061414; }
-          .sheet { page-break-after: always; break-after: page; }
-          .sheet:last-child { page-break-after: auto; break-after: auto; }
+          .deck { display: flex; flex-direction: column; gap: 18px; }
+          .sheet { break-inside: avoid; page-break-inside: avoid; }
           .label { margin-bottom: 12px; }
           .name { font-size: 18px; font-weight: 700; }
           .meta { margin-top: 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6f776f; }
-          .frame { border: 1px solid rgba(6, 20, 20, 0.14); border-radius: 18px; background: white; padding: 10px; overflow: hidden; min-height: 170mm; display: flex; align-items: flex-start; justify-content: center; }
-          img { display: block; width: 100%; height: auto; border-radius: 12px; object-fit: contain; }
+          .frame { border: 1px solid rgba(6, 20, 20, 0.14); border-radius: 18px; background: white; padding: 10px; overflow: hidden; display: flex; align-items: flex-start; justify-content: center; }
+          img { display: block; width: 100%; height: auto; border-radius: 12px; object-fit: contain; object-position: top center; }
         </style>
       </head>
-      <body>${sections.join('')}</body>
+      <body><main class="deck">${sections.join('')}</main></body>
     </html>`,
     { waitUntil: 'load' }
   );

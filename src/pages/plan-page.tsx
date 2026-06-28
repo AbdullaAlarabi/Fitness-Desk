@@ -84,7 +84,7 @@ export function PlanPage() {
   }
 
   return (
-    <div className="space-y-6 pb-28 md:pb-10">
+    <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
       <SectionCard title="Weekly split" eyebrow="Plan">
         <div className="space-y-4">
           <p className="body-copy text-muted">7-day training cycle</p>

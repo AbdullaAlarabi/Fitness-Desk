@@ -1,9 +1,9 @@
-export const APP_REVIEW_DATE_ISO = '2026-06-27T12:00:00';
+import { format } from 'date-fns';
 
 export function getAppNow() {
-  return new Date(APP_REVIEW_DATE_ISO);
+  return new Date();
 }
 
 export function getAppTodayIso() {
-  return APP_REVIEW_DATE_ISO.slice(0, 10);
+  return format(getAppNow(), 'yyyy-MM-dd');
 }

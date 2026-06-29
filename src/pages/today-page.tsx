@@ -357,62 +357,60 @@ function IntakeRow({
     <ActionRow
       label={item.name}
       selected={isTaken}
-      status={
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void toggleStatusIcon()}
-          aria-label={
-            status === 'taken'
-              ? `Change ${item.name} to skipped`
-              : status === 'skipped'
-                ? `Change ${item.name} to taken`
-                : `Mark ${item.name} as taken`
-          }
-          className={[
-            'flex h-11 w-11 items-center justify-center rounded-2xl border transition',
-            isTaken
-              ? 'border-teal bg-teal text-white'
-              : isSkipped
-                ? 'border-line bg-gold text-teal'
-                : 'border-line bg-field text-muted'
-          ].join(' ')}
-        >
-          {busy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isTaken ? (
-            <CheckCircle2 className="h-5 w-5" />
-          ) : isSkipped ? (
-            <XCircle className="h-5 w-5" />
-          ) : (
-            <Circle className="h-5 w-5" />
-          )}
-        </button>
-      }
       actions={
-        <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => onAction(item.id, { status: 'taken' })}
-          className={[
-            'min-h-11 rounded-2xl px-4 text-sm font-semibold transition',
-            status === 'taken' ? 'bg-teal text-white' : 'border border-line bg-field text-teal'
-          ].join(' ')}
-        >
-          Taken
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => onAction(item.id, { status: 'skipped' })}
-          className={[
-            'min-h-11 rounded-2xl px-4 text-sm font-semibold transition',
-            status === 'skipped' ? 'bg-gold text-teal' : 'border border-line bg-field text-muted'
-          ].join(' ')}
-        >
-          Skipped
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void toggleStatusIcon()}
+            aria-label={
+              status === 'taken'
+                ? `Change ${item.name} to skipped`
+                : status === 'skipped'
+                  ? `Change ${item.name} to taken`
+                  : `Mark ${item.name} as taken`
+            }
+            className={[
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition',
+              isTaken
+                ? 'border-teal bg-teal text-white'
+                : isSkipped
+                  ? 'border-line bg-gold text-teal'
+                  : 'border-line bg-field text-muted'
+            ].join(' ')}
+          >
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isTaken ? (
+              <CheckCircle2 className="h-5 w-5" />
+            ) : isSkipped ? (
+              <XCircle className="h-5 w-5" />
+            ) : (
+              <Circle className="h-5 w-5" />
+            )}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onAction(item.id, { status: 'taken' })}
+            className={[
+              'min-h-11 whitespace-nowrap rounded-2xl px-3 text-sm font-semibold transition sm:px-4',
+              status === 'taken' ? 'bg-teal text-white' : 'border border-line bg-field text-teal'
+            ].join(' ')}
+          >
+            Taken
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onAction(item.id, { status: 'skipped' })}
+            className={[
+              'min-h-11 whitespace-nowrap rounded-2xl px-3 text-sm font-semibold transition sm:px-4',
+              status === 'skipped' ? 'bg-gold text-teal' : 'border border-line bg-field text-muted'
+            ].join(' ')}
+          >
+            Skipped
+          </button>
         </div>
       }
     />

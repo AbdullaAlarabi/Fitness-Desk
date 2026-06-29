@@ -204,7 +204,7 @@ export function ActionRow({
         <p className="card-title text-teal">{label}</p>
         {detail ? <p className="helper-text mt-1 text-muted">{detail}</p> : null}
       </div>
-      {status ? <div className="shrink-0">{status}</div> : null}
+      {status ? <div className="shrink-0 self-center">{status}</div> : null}
       {actions ? <div className="action-row__actions">{actions}</div> : null}
     </div>
   );

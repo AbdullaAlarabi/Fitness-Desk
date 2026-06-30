@@ -85,9 +85,9 @@ export function PlanPage() {
 
   return (
     <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
-      <SectionCard title="Weekly split" eyebrow="Plan">
+      <SectionCard title="Weekly split" eyebrow="Plan" tone="dark">
         <div className="space-y-4">
-          <p className="body-copy text-muted">7-day training cycle</p>
+          <p className="body-copy text-white/58">7-day training cycle</p>
           <WeekOverviewStrip weeklyPlan={state.weeklyPlan} currentSessionId={state.currentSessionId} />
 
           {state.weeklyPlan.some((day) => day.status === 'shifted') ? (
@@ -317,7 +317,8 @@ function PlanDayCard({
           <MoreHorizontal className="h-4 w-4" />
         </IconButton>
       }
-      className={isCurrent ? 'border-teal/20 shadow-card' : ''}
+      className={isCurrent ? 'border-gold/20 shadow-card' : ''}
+      tone="dark"
     />
   );
 }
@@ -387,16 +388,17 @@ function WeekOverviewStrip({
               key={day.id}
               className={[
                 'min-w-[104px] space-y-2 px-4 py-3',
-                isCurrent ? 'border-teal/20 bg-teal text-white' : ''
+                isCurrent ? 'border-gold/16 bg-[rgba(188,255,0,0.12)] text-white' : 'bg-white/[0.04] text-white'
               ].join(' ')}
+              tone="dark"
             >
               <div className="flex items-center justify-between gap-2">
-                <p className={isCurrent ? 'text-xs font-semibold uppercase tracking-[0.18em] text-white/72' : 'text-xs font-semibold uppercase tracking-[0.18em] text-muted'}>
+                <p className={isCurrent ? 'text-xs font-semibold uppercase tracking-[0.08em] text-white/72' : 'text-xs font-semibold uppercase tracking-[0.08em] text-white/36'}>
                   D{day.dayNumber}
                 </p>
                 <span className={getOverviewDotClass(day, isCurrent)} />
               </div>
-              <p className={isCurrent ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-teal'}>
+              <p className={isCurrent ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-white/78'}>
                 {getShortDayName(day)}
               </p>
             </Card>
@@ -423,7 +425,7 @@ function MobileMenuButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="flex min-h-11 w-full items-center gap-3 rounded-2xl border border-line bg-field px-4 text-sm font-semibold text-teal disabled:opacity-50"
+      className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white disabled:opacity-50"
     >
       {icon}
       {label}
@@ -433,14 +435,14 @@ function MobileMenuButton({
 
 function StatusPill({ status }: { status: PlanStatus }) {
   const styles: Record<PlanStatus, string> = {
-    ready: 'border-[rgba(188,255,0,0.28)] bg-[rgba(188,255,0,0.14)] text-teal',
-    planned: 'border-line bg-field text-teal',
-    in_progress: 'border-teal/20 bg-[rgba(6,20,20,0.08)] text-teal',
-    completed: 'border-teal/20 bg-teal text-white',
-    skipped: 'border-gold/30 bg-gold/20 text-teal',
-    shifted: 'border-gold/25 bg-gold/12 text-teal',
-    rest: 'border-line bg-card text-muted',
-    missed: 'border-red-300 bg-red-50 text-red-700'
+    ready: 'border-[rgba(188,255,0,0.28)] bg-[rgba(188,255,0,0.14)] text-white',
+    planned: 'border-white/10 bg-white/[0.04] text-white/74',
+    in_progress: 'border-[rgba(71,184,230,0.22)] bg-[rgba(71,184,230,0.12)] text-white',
+    completed: 'border-[rgba(52,199,89,0.2)] bg-[rgba(52,199,89,0.16)] text-white',
+    skipped: 'border-[rgba(255,149,0,0.26)] bg-[rgba(255,149,0,0.14)] text-white',
+    shifted: 'border-[rgba(255,149,0,0.26)] bg-[rgba(255,149,0,0.08)] text-white',
+    rest: 'border-[rgba(124,138,230,0.18)] bg-[rgba(124,138,230,0.08)] text-white/84',
+    missed: 'border-[rgba(255,59,48,0.26)] bg-[rgba(255,59,48,0.14)] text-white'
   };
 
   return <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${styles[status]}`}>{status}</span>;
@@ -458,11 +460,11 @@ function ModalShell({
   mobileSheet?: boolean;
 }) {
   return (
-    <div className={mobileSheet ? 'fixed inset-0 z-40 flex items-end justify-center bg-teal/25 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] md:items-center md:pb-4' : 'fixed inset-0 z-40 flex items-center justify-center bg-teal/25 px-4'}>
-      <div className={mobileSheet ? 'w-full max-w-xl rounded-[28px] border border-line bg-card p-6 shadow-card md:rounded-panel' : 'w-full max-w-xl rounded-panel border border-line bg-card p-6 shadow-card'}>
+    <div className={mobileSheet ? 'fixed inset-0 z-40 flex items-end justify-center bg-[rgba(6,20,20,0.5)] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] md:items-center md:pb-4' : 'fixed inset-0 z-40 flex items-center justify-center bg-[rgba(6,20,20,0.5)] px-4'}>
+      <div className={mobileSheet ? 'w-full max-w-xl rounded-[24px] border border-white/10 bg-[rgba(15,34,34,0.98)] p-6 shadow-card md:rounded-panel' : 'w-full max-w-xl rounded-panel border border-white/10 bg-[rgba(15,34,34,0.98)] p-6 shadow-card'}>
         <div className="mb-5 flex items-start justify-between gap-4">
-          <h2 className="text-xl font-semibold text-teal">{title}</h2>
-          <button type="button" onClick={onClose} className="text-sm font-semibold text-muted">
+          <h2 className="text-xl font-semibold text-white">{title}</h2>
+          <button type="button" onClick={onClose} className="text-sm font-semibold text-white/56">
             Close
           </button>
         </div>

@@ -339,13 +339,13 @@ export function WorkoutPage() {
   return (
     <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
       {isActiveGymWorkout ? (
-        <div className="rounded-2xl border border-line bg-white px-4 py-3 lg:hidden">
+        <div className="rounded-2xl border border-white/10 bg-[rgba(15,34,34,0.98)] px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-teal">
+              <p className="truncate text-sm font-semibold text-white">
                 {snapshot?.planConfig?.title ?? snapshot?.scheduledWorkout?.title ?? 'Workout'}
               </p>
-              <p className="mt-1 text-xs font-medium text-muted">
+              <p className="mt-1 text-xs font-medium text-white/48">
                 Exercise {exerciseIndex + 1}/{snapshot?.exercises.length ?? 0} · {completedSetCount}/{totalSets} sets
               </p>
             </div>
@@ -355,9 +355,10 @@ export function WorkoutPage() {
         <SectionCard
           title="Train"
           eyebrow={format(new Date(`${dateIso}T12:00:00`), 'EEEE, MMMM d')}
+          tone="dark"
           action={
             dateIso !== state.todayIso ? (
-              <Link to="/plan" className="fd-button-secondary min-h-10 px-4">
+              <Link to="/plan" className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
                 <ArrowLeft className="h-4 w-4" />
                 Back to Plan
               </Link>
@@ -383,9 +384,9 @@ export function WorkoutPage() {
       {loading && !snapshot ? <LoadingSkeleton lines={4} /> : null}
 
       {snapshot?.sessionType === 'rest' ? (
-        <SectionCard title="Rest / Walking" eyebrow="Recovery day">
-          <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-5">
-            <div className="space-y-2 text-sm text-teal">
+        <SectionCard title="Rest / Walking" eyebrow="Recovery day" tone="dark">
+          <div className="space-y-4 rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+            <div className="space-y-2 text-sm text-white/72">
               <p>Walk 30-45 minutes</p>
               <p>Easy pace</p>
               <p>No hard running</p>
@@ -440,10 +441,10 @@ export function WorkoutPage() {
               }
             />
 
-            <SectionCard title="Exercise preview" eyebrow="In order">
+            <SectionCard title="Exercise preview" eyebrow="In order" tone="dark">
               <div className="space-y-3">
                 {snapshot.exercises.map((exercise, index) => (
-                  <Card key={exercise.key} className="space-y-3">
+                  <Card key={exercise.key} className="space-y-3" tone="dark">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex min-w-0 items-start gap-3">
                         <MediaFrame
@@ -454,17 +455,17 @@ export function WorkoutPage() {
                         />
                         <div className="min-w-0">
                           <p className="fd-label">{`Exercise ${index + 1}`}</p>
-                          <p className="card-title mt-2 text-teal">{exercise.exerciseName}</p>
-                          <p className="helper-text mt-2 text-muted">
+                          <p className="card-title mt-2 text-white">{exercise.exerciseName}</p>
+                          <p className="helper-text mt-2 text-white/46">
                             {exercise.targetMuscles ?? exercise.exerciseGroup ?? 'Target muscles set in workout plan'}
                           </p>
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="card-title text-teal">
+                        <p className="card-title text-white">
                           {exercise.setCount} × {formatRepRange(exercise.repRangeMin, exercise.repRangeMax)}
                         </p>
-                        <p className="helper-text mt-2 text-muted">Rest {exercise.restSeconds}s</p>
+                        <p className="helper-text mt-2 text-white/42">Rest {exercise.restSeconds}s</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -476,7 +477,7 @@ export function WorkoutPage() {
                         }}
                         aria-label={`Open demo for ${exercise.exerciseName}`}
                         data-testid={`exercise-demo-button-${exercise.key}`}
-                        className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm"
+                        className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-3 text-xs text-white/82 sm:px-4 sm:text-sm"
                       >
                         Demo
                       </button>
@@ -487,7 +488,7 @@ export function WorkoutPage() {
                           rememberTriggerAnd(() => setShowCoachNotes(true));
                         }}
                         aria-label={`Open details for ${exercise.exerciseName}`}
-                        className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm"
+                        className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-3 text-xs text-white/82 sm:px-4 sm:text-sm"
                       >
                         Details
                       </button>
@@ -499,7 +500,7 @@ export function WorkoutPage() {
           </div>
 
           <div className="space-y-4">
-            <SectionCard title="Session checklist" eyebrow="Preparation">
+            <SectionCard title="Session checklist" eyebrow="Preparation" tone="dark">
               <div className="grid gap-3">
                 <StatusTile label="Equipment" value="Machines / gym-based" />
                 <StatusTile label="Sets" value={`${totalSets} total sets`} />
@@ -508,7 +509,7 @@ export function WorkoutPage() {
               </div>
             </SectionCard>
 
-            <SectionCard title="Today context" eyebrow="Before you start">
+            <SectionCard title="Today context" eyebrow="Before you start" tone="dark">
               <div className="grid gap-3">
                 <StatusTile label="Training" value={formatWorkoutStatus(snapshot.scheduledWorkout?.status ?? state.currentSession.status)} />
                 <StatusTile label="Intake" value={`${getIntakeHandledCount(state.intakeGroups)}/${getIntakePlannedCount(state.intakeGroups)} handled`} />
@@ -543,7 +544,7 @@ export function WorkoutPage() {
               </button>
             }
           />
-          <SectionCard title="Session checklist" eyebrow="Preparation">
+          <SectionCard title="Session checklist" eyebrow="Preparation" tone="dark">
             <div className="grid gap-3">
               <StatusTile label="Run type" value="Controlled pacing" />
               <StatusTile label="Target" value="Finish clean" helper="Track pace and effort." />
@@ -554,9 +555,9 @@ export function WorkoutPage() {
       ) : null}
 
       {snapshot && snapshot.sessionType === 'run' && snapshot.session ? (
-        <SectionCard title="Run logger" eyebrow={snapshot.planConfig?.title ?? 'Run session'}>
-          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
-            <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal">
+        <SectionCard title="Run logger" eyebrow={snapshot.planConfig?.title ?? 'Run session'} tone="dark">
+          <div className="space-y-5 rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white/78">
               Clean reps · 1-2 reps in reserve · follow rest timer
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -615,26 +616,26 @@ export function WorkoutPage() {
 
       {snapshot && snapshot.sessionType === 'gym' && snapshot.session && !workoutComplete && currentExercise ? (
         <section className="space-y-4 pb-[calc(var(--mobile-page-bottom-cta)+1rem)] lg:pb-0" data-testid="workout-active-player">
-          <div className="sticky top-3 z-20 rounded-2xl border border-line bg-white px-4 py-3 shadow-card lg:top-4">
+          <div className="sticky top-3 z-20 rounded-2xl border border-white/10 bg-[rgba(15,34,34,0.98)] px-4 py-3 shadow-card lg:top-4">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-teal">
+                <p className="truncate text-sm font-semibold text-white">
                   {snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title ?? 'Workout'}
                 </p>
-                <p className="mt-1 text-xs font-medium text-muted">
+                <p className="mt-1 text-xs font-medium text-white/48">
                   Exercise {exerciseIndex + 1} of {snapshot.exercises.length} · In progress
                   {snapshot.session?.created_at ? ` · ${calculateSessionDurationMinutes(snapshot.session.duration_minutes, snapshot.session.created_at)} min` : ''}
                 </p>
               </div>
-              <div className="shrink-0 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold text-teal">
+              <div className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-white/82">
                 {completedSetCount}/{totalSets} sets
               </div>
             </div>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player">
-              <div className="space-y-4 rounded-3xl border border-line/70 bg-white p-4 sm:p-5 lg:space-y-5">
+            <SectionCard title={`Exercise ${exerciseIndex + 1} of ${snapshot.exercises.length}`} eyebrow="Workout player" tone="dark">
+              <div className="space-y-4 rounded-3xl border border-white/8 bg-white/[0.03] p-4 sm:p-5 lg:space-y-5">
                 <div className="flex items-start gap-3">
                   <MediaFrame
                     src={resolveExerciseImageUrl(currentExercise.mediaThumbnailUrl)}
@@ -643,9 +644,9 @@ export function WorkoutPage() {
                     imageClassName="h-full w-full object-cover"
                   />
                   <div className="min-w-0">
-                    <p className="text-2xl font-semibold text-teal">{currentExercise.exerciseName}</p>
-                    <p className="mt-2 text-sm text-muted">{currentExercise.targetMuscles ?? currentExercise.exerciseGroup ?? 'Target muscles set in workout plan'}</p>
-                    <p className="mt-2 text-sm text-muted">
+                    <p className="text-2xl font-semibold text-white">{currentExercise.exerciseName}</p>
+                    <p className="mt-2 text-sm text-white/54">{currentExercise.targetMuscles ?? currentExercise.exerciseGroup ?? 'Target muscles set in workout plan'}</p>
+                    <p className="mt-2 text-sm text-white/46">
                       <span className="lg:hidden">
                         {currentExercise.setCount} × {formatRepRange(currentExercise.repRangeMin, currentExercise.repRangeMax)} · Rest {currentExercise.restSeconds}s
                       </span>
@@ -656,12 +657,12 @@ export function WorkoutPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-line bg-card px-4 py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Current set</p>
-                  <p className="mt-2 text-xl font-semibold text-teal">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/38">Current set</p>
+                  <p className="mt-2 text-xl font-semibold text-white">
                     Set {currentSetNumber} of {currentExercise.setCount}
                   </p>
-                  {currentExercise.mainCue ? <p className="mt-2 text-sm text-muted">{currentExercise.mainCue}</p> : null}
+                  {currentExercise.mainCue ? <p className="mt-2 text-sm text-white/52">{currentExercise.mainCue}</p> : null}
                 </div>
 
                 {completedSets < currentExercise.setCount ? (
@@ -692,7 +693,7 @@ export function WorkoutPage() {
                     </div>
 
                     {!canSaveSet ? (
-                      <p className="text-sm text-muted">
+                      <p className="text-sm text-white/48">
                         {requiresWeight ? 'Enter weight and reps to save this set.' : 'Enter reps to save this set.'}
                       </p>
                     ) : null}
@@ -710,10 +711,10 @@ export function WorkoutPage() {
                 ) : null}
 
                 {restActive ? (
-                  <div className="rounded-2xl border border-line bg-card px-4 py-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Rest timer</p>
-                    <p className="mt-2 text-2xl font-semibold text-teal">{formatSeconds(restRemaining)}</p>
-                    {restRemaining === 0 ? <p className="mt-2 text-sm font-semibold text-teal">Rest complete</p> : null}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/38">Rest timer</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{formatSeconds(restRemaining)}</p>
+                    {restRemaining === 0 ? <p className="mt-2 text-sm font-semibold text-white">Rest complete</p> : null}
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button type="button" onClick={() => setRestActive(false)} className="fd-button-secondary min-h-11 px-4">
                         <TimerReset className="h-4 w-4" />
@@ -750,22 +751,22 @@ export function WorkoutPage() {
                   <SmallButton onClick={() => setShowFullPlan(true)}>Full plan</SmallButton>
                 </div>
 
-                <div className="rounded-2xl border border-line bg-card px-4 py-3 text-sm font-medium text-teal lg:bg-card lg:border-line border-none bg-transparent px-0 py-0 lg:px-4 lg:py-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white/74 lg:border-white/10 lg:bg-white/[0.04]">
                   Clean reps · 1-2 reps in reserve · follow rest timer
                 </div>
-                <button type="button" onClick={() => setShowRules(true)} className="text-xs font-semibold text-muted hidden lg:inline">
+                <button type="button" onClick={() => setShowRules(true)} className="text-xs font-semibold text-white/42 hidden lg:inline">
                   View rules
                 </button>
               </div>
             </SectionCard>
 
             <div className="space-y-4">
-              <Card className="space-y-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Saved sets</p>
+              <Card className="space-y-3" tone="dark">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/38">Saved sets</p>
                 {currentExercise.setLogs.length > 0 ? (
                   <div className="space-y-2">
                     {currentExercise.setLogs.map((setLog) => (
-                      <div key={setLog.id} className="flex items-center justify-between text-sm text-teal">
+                      <div key={setLog.id} className="flex items-center justify-between text-sm text-white/82">
                         <span>Set {setLog.set_number}</span>
                         <span>
                           {typeof setLog.weight_value === 'number' ? `${setLog.weight_value} kg × ` : ''}
@@ -775,12 +776,12 @@ export function WorkoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted">No saved sets yet.</p>
+                  <p className="text-sm text-white/46">No saved sets yet.</p>
                 )}
               </Card>
 
-              <Card className="space-y-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Session progress</p>
+              <Card className="space-y-3" tone="dark">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/38">Session progress</p>
                 <div className="grid gap-3">
                   <MiniMeta label="Exercise" value={`${exerciseIndex + 1} / ${snapshot.exercises.length}`} />
                   <MiniMeta label="Sets" value={`${completedSetCount} / ${totalSets}`} />
@@ -805,15 +806,15 @@ export function WorkoutPage() {
           ) : null}
 
           {completedSets >= currentExercise.setCount ? (
-            <Card className="space-y-4">
-              <p className="text-lg font-semibold text-teal">Exercise complete.</p>
-              <p className="text-sm text-muted">
+            <Card className="space-y-4" tone="dark">
+              <p className="text-lg font-semibold text-white">Exercise complete.</p>
+              <p className="text-sm text-white/52">
                 {exerciseIndex < snapshot.exercises.length - 1
                   ? `Next: ${snapshot.exercises[findNextIncompleteExerciseIndex(snapshot.exercises, exerciseIndex + 1)]?.exerciseName ?? 'Finish workout'}`
                   : 'All planned exercises are done.'}
               </p>
               {getProgressionSuggestion(currentExercise) ? (
-                <p className="text-sm text-muted">{getProgressionSuggestion(currentExercise)}</p>
+                <p className="text-sm text-white/46">{getProgressionSuggestion(currentExercise)}</p>
               ) : null}
               {exerciseIndex < snapshot.exercises.length - 1 ? (
                 <button type="button" onClick={handleNextExercise} className="fd-button-accent min-h-12 w-full justify-center gap-2 px-5">
@@ -832,8 +833,8 @@ export function WorkoutPage() {
       ) : null}
 
       {snapshot && snapshot.sessionType === 'gym' && snapshot.session && workoutComplete ? (
-        <SectionCard title="Session completed" eyebrow="Finish workout">
-          <div className="space-y-5 rounded-3xl border border-line/70 bg-white p-5">
+        <SectionCard title="Session completed" eyebrow="Finish workout" tone="dark">
+          <div className="space-y-5 rounded-3xl border border-white/8 bg-white/[0.03] p-5">
             <div className="grid gap-3 sm:grid-cols-2">
               <MiniMeta label="Session" value={snapshot.planConfig?.title ?? snapshot.scheduledWorkout?.title ?? 'Workout'} />
               <MiniMeta label="Exercises completed" value={`${snapshot.exercises.length} / ${snapshot.exercises.length}`} />
@@ -841,18 +842,18 @@ export function WorkoutPage() {
               <MiniMeta label="Total volume" value={`${calculateTotalVolume(snapshot.exercises)} kg`} />
               <MiniMeta label="Duration" value={`${calculateSessionDurationMinutes(snapshot.session.duration_minutes, snapshot.session.created_at)} min`} />
             </div>
-            <Card className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Progression guidance</p>
+            <Card className="space-y-3" tone="dark">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/38">Progression guidance</p>
               <div className="space-y-2">
                 {getWorkoutProgressionDetails(snapshot.exercises).map((message) => (
-                  <p key={message} className="text-sm text-teal">{message}</p>
+                  <p key={message} className="text-sm text-white/76">{message}</p>
                 ))}
               </div>
             </Card>
-            <Card className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Post-workout intake</p>
-              <p className="text-sm text-teal">Protein</p>
-              <p className="text-sm text-teal">Creatine</p>
+            <Card className="space-y-2" tone="dark">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/38">Post-workout intake</p>
+              <p className="text-sm text-white/82">Protein</p>
+              <p className="text-sm text-white/82">Creatine</p>
             </Card>
             <InputBlock label="Optional notes">
               <textarea
@@ -888,7 +889,7 @@ export function WorkoutPage() {
                   key={exercise.key}
                   type="button"
                   onClick={() => handleJumpToExercise(index)}
-                  className="w-full rounded-2xl border border-line bg-card px-4 py-4 text-left"
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-left"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-3">
@@ -899,13 +900,13 @@ export function WorkoutPage() {
                         imageClassName="h-full w-full object-cover"
                       />
                       <div className="min-w-0">
-                        <p className="font-semibold text-teal">{index + 1}. {exercise.exerciseName}</p>
-                        <p className="mt-1 text-sm text-muted">
+                        <p className="font-semibold text-white">{index + 1}. {exercise.exerciseName}</p>
+                        <p className="mt-1 text-sm text-white/46">
                           {loggedSets}/{exercise.setCount} sets done
                         </p>
                       </div>
                     </div>
-                    <span className="rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold capitalize text-teal">
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold capitalize text-white/82">
                       {status}
                     </span>
                   </div>
@@ -947,11 +948,11 @@ export function WorkoutPage() {
         >
           <div className="space-y-4">
             {demoImageFailed ? (
-              <div className="rounded-[24px] border border-line bg-card px-4 py-10 text-center text-sm text-muted">
+              <div className="rounded-[24px] border border-white/10 bg-white/[0.04] px-4 py-10 text-center text-sm text-white/46">
                 Demo image not available yet.
               </div>
             ) : (
-              <div className="rounded-[24px] border border-line bg-card p-3 sm:p-4">
+              <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-3 sm:p-4">
                 <img
                   src={resolveExerciseImageUrl(currentExercise.mediaFullUrl ?? currentExercise.mediaThumbnailUrl ?? null)}
                   alt={currentExercise.mediaAlt}
@@ -979,10 +980,10 @@ export function WorkoutPage() {
         <BottomSheet title="Session rules" onClose={() => setShowRules(false)} returnFocusEl={modalReturnFocusEl}>
           <div className="space-y-3">
             {snapshot.workoutRules.map((rule) => (
-              <div key={rule} className="rounded-2xl border border-line bg-card px-4 py-3 text-sm text-teal">
-                {rule}
-              </div>
-            ))}
+                <div key={rule} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/76">
+                  {rule}
+                </div>
+              ))}
           </div>
         </BottomSheet>
       ) : null}
@@ -1057,7 +1058,7 @@ function BottomSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-black/40 pt-[max(env(safe-area-inset-top),1rem)] md:items-center md:justify-center md:px-6 md:py-6"
+      className="fixed inset-0 z-50 flex items-end bg-[rgba(6,20,20,0.5)] pt-[max(env(safe-area-inset-top),1rem)] backdrop-blur-sm md:items-center md:justify-center md:px-6 md:py-6"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -1069,16 +1070,16 @@ function BottomSheet({
           aria-modal="true"
           aria-labelledby={titleId}
           data-testid={dataTestId}
-          className="flex h-full flex-col rounded-t-[28px] border border-line bg-white shadow-card md:h-auto md:rounded-[28px]"
+          className="flex h-full flex-col rounded-t-[28px] border border-white/10 bg-[rgba(15,34,34,0.98)] shadow-card md:h-auto md:rounded-[28px]"
         >
-          <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <p id={titleId} className="text-lg font-semibold text-teal">{title}</p>
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-[rgba(15,34,34,0.98)] px-5 py-4">
+            <p id={titleId} className="text-lg font-semibold text-white">{title}</p>
             <button
               type="button"
               onClick={onClose}
               aria-label={`Close ${title}`}
               data-modal-close="true"
-              className="rounded-2xl border border-line bg-card p-2 text-teal"
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 text-white/82"
             >
               <X className="h-4 w-4" />
             </button>
@@ -1092,9 +1093,9 @@ function BottomSheet({
 
 function MiniMeta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-card px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-teal">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/38">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }
@@ -1116,7 +1117,7 @@ function SmallButton({
       onClick={onClick}
       aria-label={ariaLabel}
       data-testid={dataTestId}
-      className="fd-button-secondary min-h-10 px-3 text-xs sm:px-4 sm:text-sm"
+      className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-3 text-xs text-white/82 sm:px-4 sm:text-sm"
     >
       {children}
     </button>
@@ -1126,7 +1127,7 @@ function SmallButton({
 function InputBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-muted">{label}</span>
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-white/38">{label}</span>
       {children}
     </label>
   );
@@ -1135,19 +1136,19 @@ function InputBlock({ label, children }: { label: string; children: React.ReactN
 function CoachRow({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
   return (
-    <div className="rounded-2xl border border-line bg-card px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</p>
-      <p className="mt-2 text-sm leading-6 text-teal">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/38">{label}</p>
+      <p className="mt-2 text-sm leading-6 text-white/78">{value}</p>
     </div>
   );
 }
 
 function ErrorBanner({ message }: { message: string }) {
-  return <div className="rounded-3xl border border-red-300 bg-red-50 px-4 py-4 text-sm text-red-700">{message}</div>;
+  return <div className="rounded-3xl border border-[rgba(255,59,48,0.2)] bg-[rgba(255,59,48,0.08)] px-4 py-4 text-sm text-red-200">{message}</div>;
 }
 
 function SuccessBanner({ message }: { message: string }) {
-  return <div className="rounded-3xl border border-line bg-white px-4 py-4 text-sm font-medium text-teal">{message}</div>;
+  return <div className="rounded-3xl border border-[rgba(52,199,89,0.18)] bg-[rgba(52,199,89,0.08)] px-4 py-4 text-sm font-medium text-green-200">{message}</div>;
 }
 
 function getLoggedSetCount(exercise: WorkoutExerciseStep) {

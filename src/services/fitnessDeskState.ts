@@ -121,6 +121,13 @@ export type FitnessDeskState = {
   runningSessions: RunningSessionRow[];
 };
 
+export class FitnessDeskStateSyncError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = 'FitnessDeskStateSyncError';
+  }
+}
+
 const WEEKLY_METRIC_KEYS = [
   'weight',
   'bmi',
@@ -225,7 +232,7 @@ export async function getFitnessDeskState(now = getAppNow()): Promise<FitnessDes
       runningSessionsResult.error;
 
     if (firstError) {
-      throw firstError;
+      throw new FitnessDeskStateSyncError(firstError.message, firstError);
     }
 
     return buildFitnessDeskState({
@@ -241,8 +248,13 @@ export async function getFitnessDeskState(now = getAppNow()): Promise<FitnessDes
       bodyMetricValues: (metricValuesResult.data as BodyMetricValueRow[]) ?? [],
       runningSessions: (runningSessionsResult.data as RunningSessionRow[]) ?? []
     });
-  } catch {
-    return getInitialFitnessDeskState(now);
+  } catch (error) {
+    if (error instanceof FitnessDeskStateSyncError) {
+      throw error;
+    }
+
+    const message = error instanceof Error ? error.message : 'Unknown Supabase sync error.';
+    throw new FitnessDeskStateSyncError(message, error);
   }
 }
 

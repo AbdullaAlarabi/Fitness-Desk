@@ -202,9 +202,9 @@ export function BodyPage() {
 
   return (
     <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
-      <Card className="space-y-2">
+      <Card className="space-y-2" tone="dark">
         <p className="fd-label">Body</p>
-        <p className="section-title text-teal">Log weight daily. Run full scan weekly.</p>
+        <p className="section-title text-white">Log weight daily. Run full scan weekly.</p>
       </Card>
 
       {error ? <ErrorBanner message={error} /> : null}
@@ -223,9 +223,9 @@ export function BodyPage() {
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           {(activeMode === 'daily' || windowWidthSafeDesktop()) ? (
-            <SectionCard title="Daily Check-In" eyebrow="Today’s Weight">
+            <SectionCard title="Daily Check-In" eyebrow="Today’s Weight" tone="dark">
               <div className="space-y-4">
-                <Card className="space-y-4">
+                <Card className="space-y-4" tone="dark">
                   <InputBlock label="Weight">
                     <div className="relative">
                       <input
@@ -235,15 +235,15 @@ export function BodyPage() {
                         inputMode="decimal"
                         value={quickWeight}
                         onChange={(event) => setQuickWeight(event.target.value)}
-                        className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 pr-14 text-base text-teal outline-none"
+                        className="fd-input pr-14"
                       />
-                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted">kg</span>
+                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-white/38">kg</span>
                     </div>
                   </InputBlock>
 
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <StatusTile label="Latest" value={latestWeightLabel} helper={latestWeightDate ? `Latest: ${latestWeightDate}` : 'Not logged yet'} />
-                    <StatusTile label="Status" value={latestDailyLoggedToday ? 'Logged today' : 'Not logged yet'} />
+                    <StatusTile tone="dark" label="Latest" value={latestWeightLabel} helper={latestWeightDate ? `Latest: ${latestWeightDate}` : 'Not logged yet'} />
+                    <StatusTile tone="dark" label="Status" value={latestDailyLoggedToday ? 'Logged today' : 'Not logged yet'} />
                   </div>
 
                   <button
@@ -256,10 +256,10 @@ export function BodyPage() {
                   </button>
                 </Card>
 
-                <Card className="space-y-3">
+                <Card className="space-y-3" tone="dark">
                   <div className="flex items-center justify-between gap-3">
                     <p className="fd-label">Optional daily notes</p>
-                    <button type="button" onClick={() => setShowDailyExtras((current) => !current)} className="fd-button-secondary min-h-10 px-4">
+                    <button type="button" onClick={() => setShowDailyExtras((current) => !current)} className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
                       {showDailyExtras ? 'Hide' : 'Show'}
                     </button>
                   </div>
@@ -275,7 +275,7 @@ export function BodyPage() {
                             inputMode="numeric"
                             value={quickEnergy}
                             onChange={(event) => setQuickEnergy(event.target.value)}
-                            className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
+                            className="fd-input"
                           />
                         </InputBlock>
                         <InputBlock label="Sleep hours">
@@ -287,7 +287,7 @@ export function BodyPage() {
                             inputMode="decimal"
                             value={quickSleep}
                             onChange={(event) => setQuickSleep(event.target.value)}
-                            className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
+                            className="fd-input"
                           />
                         </InputBlock>
                         <InputBlock label="Soreness 1–5">
@@ -299,7 +299,7 @@ export function BodyPage() {
                             inputMode="numeric"
                             value={quickSoreness}
                             onChange={(event) => setQuickSoreness(event.target.value)}
-                            className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
+                            className="fd-input"
                           />
                         </InputBlock>
                       </div>
@@ -308,12 +308,12 @@ export function BodyPage() {
                           value={quickNotes}
                           onChange={(event) => setQuickNotes(event.target.value)}
                           rows={3}
-                          className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
+                          className="fd-input min-h-[92px] px-4 py-3"
                         />
                       </InputBlock>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted">Energy, sleep, soreness, and notes are optional.</p>
+                    <p className="text-sm text-white/46">Energy, sleep, soreness, and notes are optional.</p>
                   )}
                 </Card>
               </div>
@@ -321,16 +321,16 @@ export function BodyPage() {
           ) : null}
 
           {(activeMode === 'weekly' || windowWidthSafeDesktop()) ? (
-            <SectionCard title="Weekly Scan" eyebrow="Full scale metrics">
+            <SectionCard title="Weekly Scan" eyebrow="Full scale metrics" tone="dark">
               <div className="space-y-4">
-                <Card className="space-y-4">
-                  <p className="card-title text-teal">Latest</p>
+                <Card className="space-y-4" tone="dark">
+                  <p className="card-title text-white">Latest</p>
                   {latestWeeklySummary ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <StatusTile label="Weight" value={latestWeeklySummary.weight} />
-                      <StatusTile label="BMI" value={latestWeeklySummary.bmi} />
-                      <StatusTile label="Body Fat" value={latestWeeklySummary.bodyFat} />
-                      <StatusTile label="Muscle" value={latestWeeklySummary.muscle} />
+                      <StatusTile tone="dark" label="Weight" value={latestWeeklySummary.weight} />
+                      <StatusTile tone="dark" label="BMI" value={latestWeeklySummary.bmi} />
+                      <StatusTile tone="dark" label="Body Fat" value={latestWeeklySummary.bodyFat} />
+                      <StatusTile tone="dark" label="Muscle" value={latestWeeklySummary.muscle} />
                     </div>
                   ) : (
                     <StateCard title="No weekly scan yet." message="Save a weekly scan to build the summary." />
@@ -394,13 +394,13 @@ export function BodyPage() {
                   </div>
                 </AccordionCard>
 
-                <Card className="space-y-4">
+                <Card className="space-y-4" tone="dark">
                   <InputBlock label="Notes">
                     <textarea
                       value={weeklyValues.notes}
                       onChange={(event) => setWeeklyValues((current) => ({ ...current, notes: event.target.value }))}
                       rows={3}
-                      className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-teal outline-none"
+                      className="fd-input min-h-[92px] px-4 py-3"
                     />
                   </InputBlock>
                   <button
@@ -418,20 +418,23 @@ export function BodyPage() {
         </div>
 
         <div className="space-y-4">
-          <SectionCard title="Latest" eyebrow="Summary">
+          <SectionCard title="Latest" eyebrow="Summary" tone="dark">
             <div className="grid gap-3">
-              <StatusTile label="Weight" value={latestWeightLabel} helper={latestWeightDate ? `Latest: ${latestWeightDate}` : 'Not logged yet'} />
+              <StatusTile tone="dark" label="Weight" value={latestWeightLabel} helper={latestWeightDate ? `Latest: ${latestWeightDate}` : 'Not logged yet'} />
               <StatusTile
+                tone="dark"
                 label="Body Fat"
                 value={formatSnapshotMetric(snapshot, 'body_fat', '%')}
                 helper={latestWeeklySummary ? 'From latest weekly scan.' : 'No weekly scan yet.'}
               />
               <StatusTile
+                tone="dark"
                 label="Body Water"
                 value={formatSnapshotMetric(snapshot, 'body_water', '%')}
                 helper={latestWeeklySummary ? 'From latest weekly scan.' : 'No weekly scan yet.'}
               />
               <StatusTile
+                tone="dark"
                 label="Muscle"
                 value={formatSnapshotMetric(snapshot, 'muscle_mass', 'kg')}
                 helper={latestWeeklySummary ? 'From latest weekly scan.' : 'No weekly scan yet.'}
@@ -443,8 +446,9 @@ export function BodyPage() {
             <SectionCard
               title="Trends"
               eyebrow="Real data"
+              tone="dark"
               action={
-                <button type="button" onClick={() => setShowCharts((current) => !current)} className="fd-button-secondary min-h-10 px-4">
+                <button type="button" onClick={() => setShowCharts((current) => !current)} className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
                   {showCharts ? 'Hide charts' : 'Show charts'}
                 </button>
               }
@@ -459,7 +463,7 @@ export function BodyPage() {
                         onClick={() => setChartMetric(tab.key)}
                         className={[
                           'min-h-10 rounded-2xl px-4 text-sm font-semibold',
-                          chartMetric === tab.key ? 'bg-teal text-white' : 'border border-line bg-card text-teal'
+                          chartMetric === tab.key ? 'bg-[rgba(188,255,0,0.14)] text-white' : 'border border-white/10 bg-white/[0.04] text-white/72'
                         ].join(' ')}
                       >
                         {tab.label}
@@ -474,7 +478,7 @@ export function BodyPage() {
                         onClick={() => setRange(option)}
                         className={[
                           'min-h-10 rounded-2xl px-4 text-sm font-semibold',
-                          range === option ? 'bg-gold text-teal' : 'border border-line bg-card text-muted'
+                          range === option ? 'bg-[rgba(188,255,0,0.14)] text-white' : 'border border-white/10 bg-white/[0.04] text-white/58'
                         ].join(' ')}
                       >
                         {option}
@@ -485,11 +489,11 @@ export function BodyPage() {
                     {chartData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                          <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
+                          <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
                           <XAxis dataKey="date" stroke="#96998C" />
                           <YAxis stroke="#96998C" />
                           <Tooltip />
-                          <Line type="monotone" dataKey="value" stroke="#061414" strokeWidth={3} dot={{ fill: '#BCFF00', r: 4 }} />
+                          <Line type="monotone" dataKey="value" stroke="#BCFF00" strokeWidth={3} dot={{ fill: '#BCFF00', r: 4 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
@@ -498,13 +502,13 @@ export function BodyPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted">Open charts when you want the full trend view.</p>
+                <p className="text-sm text-white/46">Open charts when you want the full trend view.</p>
               )}
             </SectionCard>
           ) : null}
 
-          <SectionCard title="Consistency reminder" eyebrow="Best comparison">
-            <p className="text-sm leading-6 text-muted">
+          <SectionCard title="Consistency reminder" eyebrow="Best comparison" tone="dark">
+            <p className="text-sm leading-6 text-white/62">
               For best comparison, measure under similar conditions: morning, after bathroom, before food, using the same scale.
             </p>
           </SectionCard>
@@ -529,7 +533,7 @@ function SegmentButton({
       onClick={onClick}
       className={[
         'min-h-11 rounded-2xl px-4 text-sm font-semibold',
-        active ? 'bg-teal text-white' : 'border border-line bg-card text-teal'
+        active ? 'bg-[rgba(188,255,0,0.14)] text-white' : 'border border-white/10 bg-white/[0.04] text-white/72'
       ].join(' ')}
     >
       {children}
@@ -551,13 +555,13 @@ function AccordionCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="space-y-4">
+    <Card className="space-y-4" tone="dark">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="card-title text-teal">{title}</p>
-          <p className="helper-text mt-2 text-muted">{helper}</p>
+          <p className="card-title text-white">{title}</p>
+          <p className="helper-text mt-2 text-white/46">{helper}</p>
         </div>
-        <button type="button" onClick={onToggle} className="fd-button-secondary min-h-10 px-4">
+        <button type="button" onClick={onToggle} className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
           {open ? 'Hide' : 'Show'}
         </button>
       </div>
@@ -569,7 +573,7 @@ function AccordionCard({
 function InputBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-muted">{label}</span>
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-white/38">{label}</span>
       {children}
     </label>
   );
@@ -596,9 +600,9 @@ function MetricField({
           inputMode="decimal"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 pr-16 text-base text-teal outline-none"
+          className="fd-input pr-16"
         />
-        {unit ? <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted">{unit}</span> : null}
+        {unit ? <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-white/38">{unit}</span> : null}
       </div>
     </InputBlock>
   );
@@ -619,7 +623,7 @@ function TextField({
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-teal outline-none"
+        className="fd-input"
       />
     </InputBlock>
   );
@@ -627,16 +631,16 @@ function TextField({
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-card px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">{label}</p>
-      <p className="mt-2 text-base font-semibold text-teal">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/38">{label}</p>
+      <p className="mt-2 text-base font-semibold text-white">{value}</p>
     </div>
   );
 }
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="rounded-3xl border border-red-300 bg-red-50 px-4 py-4 text-sm text-red-700">
+    <div className="rounded-3xl border border-[rgba(255,59,48,0.2)] bg-[rgba(255,59,48,0.08)] px-4 py-4 text-sm text-red-200">
       {message}
     </div>
   );
@@ -644,7 +648,7 @@ function ErrorBanner({ message }: { message: string }) {
 
 function SuccessBanner({ message }: { message: string }) {
   return (
-    <div className="rounded-3xl border border-line bg-white px-4 py-4 text-sm font-medium text-teal">
+    <div className="rounded-3xl border border-[rgba(52,199,89,0.18)] bg-[rgba(52,199,89,0.08)] px-4 py-4 text-sm font-medium text-green-200">
       {message}
     </div>
   );

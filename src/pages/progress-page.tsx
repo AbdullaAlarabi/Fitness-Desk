@@ -102,44 +102,44 @@ export function ProgressPage() {
 
   return (
     <div className="space-y-6 pb-[calc(var(--mobile-page-bottom)+0.75rem)] md:pb-10">
-      <Card className="space-y-2">
+      <Card className="space-y-2" tone="dark">
         <p className="fd-label">Progress</p>
-        <p className="section-title text-teal">Training, intake, body, and run trends.</p>
+        <p className="section-title text-white">Training, intake, body, and run trends.</p>
       </Card>
 
       {error ? <ErrorBanner message={error} /> : null}
       {loading && !summary ? <LoadingSkeleton lines={4} /> : null}
 
       <section className="space-y-4">
-        <SectionCard title="This Week" eyebrow="Summary">
+        <SectionCard title="This Week" eyebrow="Summary" tone="dark">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {weekSummaryCards.map((card) => (
-              <StatusTile key={card.label} label={card.label} value={card.value} helper={card.helper} />
+              <StatusTile key={card.label} tone="dark" label={card.label} value={card.value} helper={card.helper} />
             ))}
           </div>
         </SectionCard>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <SectionCard title="Consistency Score" eyebrow="Big picture">
+          <SectionCard title="Consistency Score" eyebrow="Big picture" tone="dark">
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="flex h-24 w-24 items-center justify-center rounded-full border-8 border-gold bg-teal text-2xl font-semibold text-gold shadow-card">
+                <div className="flex h-24 w-24 items-center justify-center rounded-full border-8 border-[rgba(188,255,0,0.24)] bg-[rgba(188,255,0,0.08)] text-2xl font-semibold text-white shadow-card">
                   {`${sharedProgress.consistencyScore}%`}
                 </div>
                 <div className="grid flex-1 gap-3 sm:grid-cols-3">
-                  <StatusTile label="Workouts" value={`${sharedProgress.workoutCompletionPercent}%`} />
-                  <StatusTile label="Intake" value={`${sharedProgress.intakeHandledPercent}%`} />
-                  <StatusTile label="Body" value={`${sharedProgress.bodyCheckinAdherencePercent}%`} />
+                  <StatusTile tone="dark" label="Workouts" value={`${sharedProgress.workoutCompletionPercent}%`} />
+                  <StatusTile tone="dark" label="Intake" value={`${sharedProgress.intakeHandledPercent}%`} />
+                  <StatusTile tone="dark" label="Body" value={`${sharedProgress.bodyCheckinAdherencePercent}%`} />
                 </div>
               </div>
-              <p className="text-sm text-muted">Based on workouts, intake, and body check-ins this week.</p>
+              <p className="text-sm text-white/52">Based on workouts, intake, and body check-ins this week.</p>
             </div>
           </SectionCard>
 
-          <SectionCard title="What to do next" eyebrow="Practical">
+          <SectionCard title="What to do next" eyebrow="Practical" tone="dark">
             <div className="space-y-3">
-              <p className="card-title text-teal">{recommendation.title}</p>
-              <p className="text-sm leading-6 text-muted">{recommendation.message}</p>
+              <p className="card-title text-white">{recommendation.title}</p>
+              <p className="text-sm leading-6 text-white/62">{recommendation.message}</p>
             </div>
           </SectionCard>
         </section>
@@ -150,8 +150,9 @@ export function ProgressPage() {
           <DataPanel
             title="Weight trend"
             subtitle="Latest movement in scale weight."
+            tone="dark"
             actions={
-              <button type="button" onClick={() => setShowBodyTrend((current) => !current)} className="fd-button-secondary min-h-10 px-4">
+              <button type="button" onClick={() => setShowBodyTrend((current) => !current)} className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
                 {showBodyTrend ? 'Hide' : 'View'}
               </button>
             }
@@ -162,14 +163,14 @@ export function ProgressPage() {
                 <div className="flex flex-wrap gap-2">
                   {bodyTabs.map((tab) => (
                     <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setBodyTab(tab.key)}
-                      className={[
-                        'min-h-10 rounded-2xl px-4 text-sm font-semibold',
-                        bodyTab === tab.key ? 'bg-teal text-white' : 'border border-line bg-card text-teal'
-                      ].join(' ')}
-                    >
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setBodyTab(tab.key)}
+                        className={[
+                          'min-h-10 rounded-2xl px-4 text-sm font-semibold',
+                          bodyTab === tab.key ? 'bg-[rgba(188,255,0,0.14)] text-white' : 'border border-white/10 bg-white/[0.04] text-white/72'
+                        ].join(' ')}
+                      >
                       {tab.label}
                     </button>
                   ))}
@@ -177,25 +178,26 @@ export function ProgressPage() {
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={bodyChartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                      <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
+                      <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
                       <XAxis dataKey="date" stroke="#96998C" />
                       <YAxis stroke="#96998C" />
                       <Tooltip />
-                      <Line type="monotone" dataKey="value" stroke="#061414" strokeWidth={3} dot={{ fill: '#BCFF00', r: 4 }} />
+                      <Line type="monotone" dataKey="value" stroke="#BCFF00" strokeWidth={3} dot={{ fill: '#BCFF00', r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
             ) : hasBodyTrend ? (
-              <p className="text-sm text-muted">Open this panel to view the current body trend.</p>
+              <p className="text-sm text-white/46">Open this panel to view the current body trend.</p>
             ) : null}
           </DataPanel>
 
           <DataPanel
             title="Training consistency"
             subtitle="Weekly structured-session completion."
+            tone="dark"
             actions={
-              <button type="button" onClick={() => setShowTrainingTrend((current) => !current)} className="fd-button-secondary min-h-10 px-4">
+              <button type="button" onClick={() => setShowTrainingTrend((current) => !current)} className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
                 {showTrainingTrend ? 'Hide' : 'View'}
               </button>
             }
@@ -205,24 +207,25 @@ export function ProgressPage() {
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={weeklyBars} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                    <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
+                    <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
                     <XAxis dataKey="week" stroke="#96998C" />
                     <YAxis stroke="#96998C" domain={[0, 100]} />
                     <Tooltip />
-                    <Bar dataKey="workouts" fill="#061414" radius={[10, 10, 0, 0]} />
+                    <Bar dataKey="workouts" fill="#BCFF00" radius={[10, 10, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : hasWorkoutBars ? (
-              <p className="text-sm text-muted">Open this panel to view the training trend.</p>
+              <p className="text-sm text-white/46">Open this panel to view the training trend.</p>
             ) : null}
           </DataPanel>
 
           <DataPanel
             title="Intake adherence"
             subtitle="Handled intake logs across recent weeks."
+            tone="dark"
             actions={
-              <button type="button" onClick={() => setShowIntakeTrend((current) => !current)} className="fd-button-secondary min-h-10 px-4">
+              <button type="button" onClick={() => setShowIntakeTrend((current) => !current)} className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
                 {showIntakeTrend ? 'Hide' : 'View'}
               </button>
             }
@@ -232,7 +235,7 @@ export function ProgressPage() {
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={weeklyBars} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                    <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
+                    <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
                     <XAxis dataKey="week" stroke="#96998C" />
                     <YAxis stroke="#96998C" domain={[0, 100]} />
                     <Tooltip />
@@ -241,15 +244,16 @@ export function ProgressPage() {
                 </ResponsiveContainer>
               </div>
             ) : hasIntakeBars ? (
-              <p className="text-sm text-muted">Open this panel to view the intake trend.</p>
+              <p className="text-sm text-white/46">Open this panel to view the intake trend.</p>
             ) : null}
           </DataPanel>
 
           <DataPanel
             title="Run performance"
             subtitle="3.2 km results and pace movement."
+            tone="dark"
             actions={
-              <button type="button" onClick={() => setShowRunTrend((current) => !current)} className="fd-button-secondary min-h-10 px-4">
+              <button type="button" onClick={() => setShowRunTrend((current) => !current)} className="fd-button-secondary min-h-10 border-white/10 bg-transparent px-4 text-white/82">
                 {showRunTrend ? 'Hide' : 'View'}
               </button>
             }
@@ -258,44 +262,44 @@ export function ProgressPage() {
             {hasRunTrend && showRunTrend ? (
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <StatusTile label="Current best" value={formatRunTime(summary?.runningSnapshot.bestThreePointTwoKmSeconds ?? 1200)} />
-                  <StatusTile label="Latest 3.2 km" value={latestRun ? formatRunTime(latestRun) : 'No run logged'} />
-                  <StatusTile label="Current pace" value={formatPace(summary?.runningSnapshot.currentPaceSecondsPerKm ?? 375)} />
-                  <StatusTile label="Target pace" value={formatPace(summary?.runningSnapshot.targetPaceSecondsPerKm ?? 281)} />
+                  <StatusTile tone="dark" label="Current best" value={formatRunTime(summary?.runningSnapshot.bestThreePointTwoKmSeconds ?? 1200)} />
+                  <StatusTile tone="dark" label="Latest 3.2 km" value={latestRun ? formatRunTime(latestRun) : 'No run logged'} />
+                  <StatusTile tone="dark" label="Current pace" value={formatPace(summary?.runningSnapshot.currentPaceSecondsPerKm ?? 375)} />
+                  <StatusTile tone="dark" label="Target pace" value={formatPace(summary?.runningSnapshot.targetPaceSecondsPerKm ?? 281)} />
                 </div>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={runChartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                      <CartesianGrid stroke="rgba(6,20,20,0.12)" strokeDasharray="4 4" />
+                      <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
                       <XAxis dataKey="date" stroke="#96998C" />
                       <YAxis stroke="#96998C" domain={[14, 20.5]} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="minutes" stroke="#061414" strokeWidth={3} dot={{ fill: '#BCFF00', r: 4 }} />
+                      <Line type="monotone" dataKey="minutes" stroke="#00D4AA" strokeWidth={3} dot={{ fill: '#BCFF00', r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
             ) : hasRunTrend ? (
-              <p className="text-sm text-muted">Open this panel to view the run trend.</p>
+              <p className="text-sm text-white/46">Open this panel to view the run trend.</p>
             ) : null}
           </DataPanel>
         </div>
 
         <div className="space-y-4">
-          <SectionCard title="What changed" eyebrow="Latest signals">
+          <SectionCard title="What changed" eyebrow="Latest signals" tone="dark">
             <div className="grid gap-3">
-              <StatusTile label="Weekly summary" value={sharedProgress.weeklySummary} />
-              <StatusTile label="Monthly summary" value={sharedProgress.monthlySummary} />
-              <StatusTile label="Current weight" value={typeof appState.body.dailyWeightKg === 'number' ? `${appState.body.dailyWeightKg} kg` : 'Not logged yet'} />
-              <StatusTile label="Next run test" value={summary?.runningSnapshot.nextTestDate ?? '--'} />
+              <StatusTile tone="dark" label="Weekly summary" value={sharedProgress.weeklySummary} />
+              <StatusTile tone="dark" label="Monthly summary" value={sharedProgress.monthlySummary} />
+              <StatusTile tone="dark" label="Current weight" value={typeof appState.body.dailyWeightKg === 'number' ? `${appState.body.dailyWeightKg} kg` : 'Not logged yet'} />
+              <StatusTile tone="dark" label="Next run test" value={summary?.runningSnapshot.nextTestDate ?? '--'} />
             </div>
           </SectionCard>
 
-          <SectionCard title="Monthly snapshot" eyebrow="Simple view">
+          <SectionCard title="Monthly snapshot" eyebrow="Simple view" tone="dark">
             <div className="space-y-3">
-              <p className="text-sm leading-6 text-muted">Consistency uses the same workout, intake, and body check-in logic shown in Today and Progress.</p>
-              <p className="text-sm leading-6 text-muted">Score split: workouts 50%, intake 30%, body 20%.</p>
-              <p className="text-sm leading-6 text-muted">
+              <p className="text-sm leading-6 text-white/62">Consistency uses the same workout, intake, and body check-in logic shown in Today and Progress.</p>
+              <p className="text-sm leading-6 text-white/62">Score split: workouts 50%, intake 30%, body 20%.</p>
+              <p className="text-sm leading-6 text-white/62">
                 3.2 km baseline: {formatRunTime(summary?.runningSnapshot.baselineThreePointTwoKmSeconds ?? 1200)}.
                 Target: {formatRunTime(summary?.runningSnapshot.targetThreePointTwoKmSeconds ?? 900)}.
               </p>
@@ -309,7 +313,7 @@ export function ProgressPage() {
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="rounded-3xl border border-red-300 bg-red-50 px-4 py-4 text-sm text-red-700">
+    <div className="rounded-3xl border border-[rgba(255,59,48,0.2)] bg-[rgba(255,59,48,0.08)] px-4 py-4 text-sm text-red-200">
       {message}
     </div>
   );

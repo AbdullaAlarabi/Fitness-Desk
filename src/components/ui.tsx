@@ -44,20 +44,22 @@ export function SectionCard({
   eyebrow,
   action,
   children,
-  className = ''
+  className = '',
+  tone = 'light'
 }: {
   title: string;
   eyebrow?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  tone?: 'light' | 'dark';
 }) {
   return (
-    <section className={cx('fd-card p-5 sm:p-6', className)}>
+    <section className={cx(tone === 'dark' ? 'fd-card-dark p-5 sm:p-6' : 'fd-card p-5 sm:p-6', className)}>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          {eyebrow ? <SectionEyebrow>{eyebrow}</SectionEyebrow> : null}
-          <h2 className="section-title mt-3 text-teal">{title}</h2>
+          {eyebrow ? <SectionEyebrow inverse={tone === 'dark'}>{eyebrow}</SectionEyebrow> : null}
+          <h2 className={cx('section-title mt-3', tone === 'dark' ? 'text-white' : 'text-teal')}>{title}</h2>
         </div>
         {action}
       </div>
@@ -66,8 +68,16 @@ export function SectionCard({
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={cx('fd-subcard p-4 sm:p-5', className)}>{children}</div>;
+export function Card({
+  children,
+  className = '',
+  tone = 'light'
+}: {
+  children: ReactNode;
+  className?: string;
+  tone?: 'light' | 'dark';
+}) {
+  return <div className={cx(tone === 'dark' ? 'fd-subcard-dark p-4 sm:p-5' : 'fd-subcard p-4 sm:p-5', className)}>{children}</div>;
 }
 
 export function MissionCard({
@@ -221,7 +231,8 @@ export function ScheduleCard({
   image,
   primaryAction,
   menuAction,
-  className = ''
+  className = '',
+  tone = 'light'
 }: {
   eyebrow?: string;
   dayLabel: string;
@@ -238,19 +249,20 @@ export function ScheduleCard({
   primaryAction?: ReactNode;
   menuAction?: ReactNode;
   className?: string;
+  tone?: 'light' | 'dark';
 }) {
   return (
-    <article className={cx('schedule-card', className)}>
+    <article className={cx(tone === 'dark' ? 'schedule-card-dark' : 'schedule-card', className)}>
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            {eyebrow ? <p className="eyebrow-text text-muted">{eyebrow}</p> : null}
+            {eyebrow ? <p className={cx('eyebrow-text', tone === 'dark' ? 'text-white/42' : 'text-muted')}>{eyebrow}</p> : null}
             {badges}
           </div>
-          <p className="card-title text-teal">{dayLabel}</p>
-          <h3 className="section-title text-teal">{title}</h3>
-          <p className="body-copy text-muted">{focus}</p>
-          <p className="helper-text text-teal">{duration}</p>
+          <p className={cx('card-title', tone === 'dark' ? 'text-white/82' : 'text-teal')}>{dayLabel}</p>
+          <h3 className={cx('section-title', tone === 'dark' ? 'text-white' : 'text-teal')}>{title}</h3>
+          <p className={cx('body-copy', tone === 'dark' ? 'text-white/58' : 'text-muted')}>{focus}</p>
+          <p className={cx('helper-text', tone === 'dark' ? 'text-white/62' : 'text-teal')}>{duration}</p>
           {image ? (
             <MediaFrame
               src={image.src}
@@ -258,6 +270,7 @@ export function ScheduleCard({
               wrapperClassName="mt-3 h-[118px] w-full max-w-sm rounded-[20px] md:h-[130px]"
               imageClassName="h-full w-full object-cover"
               imageStyle={{ objectPosition: image.objectPosition }}
+              tone={tone}
             />
           ) : null}
         </div>
@@ -276,7 +289,8 @@ export function DataPanel({
   actions,
   empty,
   children,
-  className = ''
+  className = '',
+  tone = 'light'
 }: {
   title: string;
   subtitle?: string;
@@ -284,13 +298,14 @@ export function DataPanel({
   empty?: ReactNode;
   children?: ReactNode;
   className?: string;
+  tone?: 'light' | 'dark';
 }) {
   return (
-    <section className={cx('fd-card p-5 sm:p-6', className)}>
+    <section className={cx(tone === 'dark' ? 'fd-card-dark p-5 sm:p-6' : 'fd-card p-5 sm:p-6', className)}>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h2 className="section-title text-teal">{title}</h2>
-          {subtitle ? <p className="helper-text mt-2 text-muted">{subtitle}</p> : null}
+          <h2 className={cx('section-title', tone === 'dark' ? 'text-white' : 'text-teal')}>{title}</h2>
+          {subtitle ? <p className={cx('helper-text mt-2', tone === 'dark' ? 'text-white/52' : 'text-muted')}>{subtitle}</p> : null}
         </div>
         {actions}
       </div>

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { getScheduleStatus } from '../src/components/StudyScheduleTimeline'
 import coreSeed from '../src/data/core-seed.json'
 import type { CoreSeed } from '../src/types/database'
 
@@ -67,6 +68,25 @@ test('every schedule relationship resolves inside the deterministic core seed', 
     if (task.assessment_id) assert.ok(assessmentIds.has(task.assessment_id), `${task.title}: invalid assessment`)
     if (task.learning_unit_id) assert.ok(unitIds.has(task.learning_unit_id), `${task.title}: invalid unit`)
   })
+})
+
+test('the exact timeline derives complete, today, overdue, upcoming, and exam states', () => {
+  const [firstTask] = seed.studyTasks
+  const todayTask = seed.studyTasks.find((task) => task.task_date === '2026-07-25')
+  const upcomingTask = seed.studyTasks.find((task) => task.task_date === '2026-07-26')
+  const examTask = seed.studyTasks.find((task) => task.task_type === 'exam')
+
+  assert.ok(todayTask)
+  assert.ok(upcomingTask)
+  assert.ok(examTask)
+  assert.equal(getScheduleStatus(firstTask, new Set(), '2026-07-25'), 'overdue')
+  assert.equal(getScheduleStatus(todayTask, new Set(), '2026-07-25'), 'today')
+  assert.equal(getScheduleStatus(upcomingTask, new Set(), '2026-07-25'), 'upcoming')
+  assert.equal(getScheduleStatus(examTask, new Set(), '2026-07-25'), 'milestone')
+  assert.equal(
+    getScheduleStatus(firstTask, new Set([firstTask.id]), '2026-07-25'),
+    'complete',
+  )
 })
 
 test('all four assessment roadmaps retain the approved 100% weights and undated Mock 3', () => {

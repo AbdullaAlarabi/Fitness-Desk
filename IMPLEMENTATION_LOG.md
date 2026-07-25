@@ -273,6 +273,7 @@ Status: complete on 21 July 2026.
 - Added a dedicated Roadmap destination to the coach desktop and mobile navigation.
 - Extracted the assessment roadmap into one shared component so student and coach timelines cannot drift apart.
 - Connected the coach roadmap to the student profile's live attempts, completion, readiness, unlocks, and overrides.
+- Added the complete approved dated schedule as a shared chronological timeline for student and coach, with every task, live completion state, today/overdue/upcoming markers, exam milestones, and role-appropriate task actions.
 - Preserved coach preview access to locked chapter, revision, and mock content without changing student progression.
 
 Verification:

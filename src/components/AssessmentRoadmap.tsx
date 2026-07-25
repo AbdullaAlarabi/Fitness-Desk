@@ -6,6 +6,7 @@ import {
   LockKeyhole,
   Map as RouteMap,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { useStudentOverview } from '../features/student/useStudentOverview'
 import { formatShortDate } from '../lib/date'
@@ -70,6 +71,7 @@ export function AssessmentRoadmap({
   title,
   description,
   allAssessmentsPath,
+  leadContent,
 }: {
   overview: ReturnType<typeof useStudentOverview>
   viewerRole: UserRole
@@ -78,6 +80,7 @@ export function AssessmentRoadmap({
   title: string
   description: string
   allAssessmentsPath: string
+  leadContent?: ReactNode
 }) {
   const courseById = new Map(overview.courses.map((course) => [course.id, course]))
   const visibleAssessments = assessmentId
@@ -118,6 +121,17 @@ export function AssessmentRoadmap({
     >
       <div className="space-y-6">
         {overview.error && <ErrorState message={overview.error} onRetry={() => void overview.reload()} />}
+        {leadContent}
+        {leadContent && (
+          <div className="pt-2">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">
+              Assessment paths
+            </p>
+            <h2 className="mt-1 text-2xl font-bold text-navy">
+              Chapters, revision, and mock progression
+            </h2>
+          </div>
+        )}
         {visibleAssessments.map((assessment) => {
           const course = courseById.get(assessment.course_id)
           const units = overview.units

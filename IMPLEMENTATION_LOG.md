@@ -267,3 +267,17 @@ Status: complete on 21 July 2026.
 - Converted the existing checked-book brand mark into SVG and raster application icons.
 - Added Safari tab, pinned-tab, Apple touch, Home Screen, maskable, and web-manifest icon metadata.
 - Added opaque Apple/manifest artwork so iOS and macOS apply their native icon masks without unwanted corner colors.
+
+## Shared coach roadmap
+
+- Added a dedicated Roadmap destination to the coach desktop and mobile navigation.
+- Extracted the assessment roadmap into one shared component so student and coach timelines cannot drift apart.
+- Connected the coach roadmap to the student profile's live attempts, completion, readiness, unlocks, and overrides.
+- Preserved coach preview access to locked chapter, revision, and mock content without changing student progression.
+
+Verification:
+
+- Full automated suite: 38/38 tests passed.
+- TypeScript and production build passed.
+- Authenticated read-only QA passed for all four seven-step coach timelines at 390×844 and 1440×1000 with no horizontal overflow.
+- The shared student roadmap passed a mobile regression check using live attempt data.

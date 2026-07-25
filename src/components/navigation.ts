@@ -27,6 +27,7 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
   ],
   coach: [
     { label: 'Dashboard', to: '/coach', icon: Gauge, end: true },
+    { label: 'Roadmap', to: '/coach/roadmap', icon: Map },
     { label: 'Attempts', to: '/coach/attempts', icon: FileQuestion },
     { label: 'Essays', to: '/coach/essays', icon: ClipboardCheck },
     { label: 'Activity', to: '/coach/activity', icon: Activity },

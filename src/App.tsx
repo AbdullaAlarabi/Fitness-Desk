@@ -9,6 +9,7 @@ import { CoachShellPage } from './pages/CoachShellPage'
 import { CoachActivityPage } from './pages/CoachActivityPage'
 import { CoachAttemptDetailPage } from './pages/CoachAttemptDetailPage'
 import { CoachAttemptsPage } from './pages/CoachAttemptsPage'
+import { CoachRoadmapPage } from './pages/CoachRoadmapPage'
 import { ChapterQuizPage } from './pages/ChapterQuizPage'
 import { ChapterStudyPage } from './pages/ChapterStudyPage'
 import { LoginPage } from './pages/LoginPage'
@@ -109,6 +110,7 @@ export default function App() {
         }
       >
         <Route index element={<CoachShellPage />} />
+        <Route path="roadmap" element={<CoachRoadmapPage />} />
         <Route path="attempts" element={<CoachAttemptsPage />} />
         <Route path="attempts/:attemptId" element={<CoachAttemptDetailPage />} />
         <Route path="essays" element={<CoachAttemptsPage essaysOnly />} />

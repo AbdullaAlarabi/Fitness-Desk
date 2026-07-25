@@ -7,7 +7,10 @@ export function MobileBottomNav({ items }: { items: NavigationItem[] }) {
       aria-label="Primary navigation"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-surface/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_28px_rgba(18,35,63,0.08)] backdrop-blur-xl lg:hidden"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
+      <div
+        className="mx-auto grid max-w-lg gap-1"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => {
           const Icon = item.icon
           return (
